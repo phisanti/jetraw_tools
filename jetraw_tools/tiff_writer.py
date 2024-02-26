@@ -118,7 +118,7 @@ class TiffWriter_5D:
         return image
 
 
-def imwrite(output_tiff_filename, input_image, description="", metadata=None, ome=True, imagej=False):
+def imwrite(output_tiff_filename, input_image, description="", metadata=None, ome=True, imagej=False, as_json=True):
     """Write numpy array to a JetRaw compressed TIFF file.
     Refer to the TiffWriter class and its write function for more information.
 
@@ -159,10 +159,11 @@ def imwrite(output_tiff_filename, input_image, description="", metadata=None, om
     # Add metadata if present
     if metadata:
 
-        json_filename = output_tiff_filename.replace(".ome.p.tiff", ".json")
-        json_str  = json.dumps(metadata.json(), indent=3, ensure_ascii=False)
-        with open(json_filename, "w", encoding='utf-8') as f:
-            f.write(json_str)
+        if as_json:
+            json_filename = output_tiff_filename.replace(".ome.p.tiff", ".json")
+            json_str  = json.dumps(metadata.json(), indent=3, ensure_ascii=False)
+            with open(json_filename, "w", encoding='utf-8') as f:
+                f.write(json_str)
 
         if ome:
             tifffile.tiffcomment(output_tiff_filename, metadata.to_xml().encode('ascii', 'ignore'))
