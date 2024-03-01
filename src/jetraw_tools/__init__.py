@@ -4,7 +4,7 @@ from .jetraw_tiff import (  # noqa: F401
     dp_status_as_exception,
 )
 from .tiff_reader import TiffReader, imread  # noqa: F401
-from .tiff_writer import TiffWriter, imwrite  # noqa: F401
+from .tiff_writer import TiffWriter_5D, imwrite  # noqa: F401
 import ctypes
 import numpy as np
 

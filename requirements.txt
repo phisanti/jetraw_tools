@@ -1,0 +1,4 @@
+numpy
+dpcore
+tifffile
+ome_types

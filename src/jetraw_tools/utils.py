@@ -1,7 +1,53 @@
+import os
 import dpcore
 import numpy as np
+import tifffile
 from ome_types.model import MapAnnotation, Map
 from ome_types.model.map import M
+
+
+def add_extension(input_filename, ome=False):
+
+    """Add an extension to a filename.
+    
+    :param filename: The filename to add the extension to
+    :type filename: str
+    :param ext: The extension to add, including the dot
+    :type ext: str
+    :returns: The filename with the extension added
+    :rtype: str
+    """
+
+    base, ext = os.path.splitext(input_filename)
+    if ome:
+        output_filename = f"{base}.ome.p.tiff" 
+    else:
+        output_filename = f"{base}.p.tiff"
+
+    return output_filename
+
+
+def create_compress_folder(folder_path, suffix="_compressed"):
+    """Create a folder for compressed images.
+    :param folder_path: The path to the with the source images.
+    :type folder_path: str
+    :param suffix: The suffix to append to the compressed folder name. 
+                  Default is "_compressed".
+    :type suffix: str
+    :returns: The path to the newly created compressed folder.
+    :rtype: str
+    """
+        
+    path = os.path.normpath(folder_path)
+    folder_path_split = path.split(os.sep)
+    compressed_folder_name = folder_path_split[-1] + suffix
+    compressed_folder_path = os.path.join(os.sep.join(folder_path_split[:-1]), compressed_folder_name)
+    
+    if not os.path.exists(compressed_folder_path):
+        os.makedirs(compressed_folder_path)
+    
+    return compressed_folder_path
+
 
 def convert_to_ascii(data):
     """
@@ -36,6 +82,23 @@ def flatten_dict(d):
         else:
             result[key] = value
     return result
+
+
+def serialise(data):
+    if isinstance(data, dict):
+        return {key: serialise(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [serialise(item) for item in data]
+    elif isinstance(data, tuple):
+        return tuple(serialise(item) for item in data)
+    elif isinstance(data, set):
+        return {serialise(item) for item in data}
+    elif isinstance(data, frozenset):
+        return frozenset(serialise(item) for item in data)
+    elif isinstance(data, (str, int, float, bool, type(None))):
+        return data
+    else:
+        return str(data)
 
 
 def dict2ome(metadata):
@@ -117,7 +180,7 @@ def prepare_images(image_stack, depth=0, identifier=False, First_call=True, verb
     
     if not identifier:
         raise ValueError("The 'identifier' parameter is not provided. Please provide an identifier.")
-    
+
     # Prepare images in the stack
     if len(image_stack.shape) > 2:
 

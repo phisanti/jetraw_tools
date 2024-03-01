@@ -1,8 +1,10 @@
 import numpy as np
 import tifffile
+import ome_types
 from .jetraw_tiff import JetrawTiff
 import json
-
+from .utils import convert_to_ascii, flatten_dict, serialise
+import json
 
 class TiffWriter_5D:
     """TiffWriter writes numpy array to a JetRaw compressed TIFF file.
@@ -143,33 +145,35 @@ def imwrite(output_tiff_filename, input_image, description="", metadata=None, om
     if not input_image.flags['C_CONTIGUOUS']:
         raise ValueError("The input image must be contiguous for proper compression.")
 
-    # Validate output_tiff_filename
-    if output_tiff_filename.endswith(".tiff"):
-        output_tiff_filename = output_tiff_filename.replace(".tiff", ".p.tiff")
-    if not output_tiff_filename.endswith(".p.tiff"):
-        output_tiff_filename = output_tiff_filename + ".p.tiff"
-    if ome:
-        output_tiff_filename = output_tiff_filename.replace(".p.tiff", ".ome.p.tiff")
-
-
     # Call TiffWriter to write the compressed image
     with TiffWriter_5D(output_tiff_filename, description) as jetraw_writer:
         jetraw_writer.write(input_image)
     
     # Add metadata if present
     if metadata:
-
         if as_json:
-            json_filename = output_tiff_filename.replace(".ome.p.tiff", ".json")
-            json_str  = json.dumps(metadata.json(), indent=3, ensure_ascii=False)
+            
+            if isinstance(metadata, ome_types.OME):
+                metadata_dump = json.loads(metadata.json())
+
+                json_filename = output_tiff_filename.replace(".ome.p.tiff", ".json")
+            else:
+                metadata_dump = metadata
+                json_filename = output_tiff_filename.replace(".p.tiff", ".json")
+
             with open(json_filename, "w", encoding='utf-8') as f:
-                f.write(json_str)
+                json.dump(metadata_dump, f, indent=3, ensure_ascii=False)
 
         if ome:
             tifffile.tiffcomment(output_tiff_filename, metadata.to_xml().encode('ascii', 'ignore'))
         
         if imagej:
-            tifffile.tiffcomment(output_tiff_filename, metadata.to_xml().encode('ascii', 'ignore'))
+            if isinstance(metadata, ome_types.OME):
+                metadata=convert_to_ascii(metadata.dict())
+            else:
+                metadata=convert_to_ascii(metadata)
+            metadata=flatten_dict(metadata)
+            tifffile.tiffcomment(output_tiff_filename, metadata)
         
         else:
             None

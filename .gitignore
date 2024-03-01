@@ -1,2 +1,3 @@
 src/jetraw_tools/__pycache__/*
 src/jetraw_tools/jetraw_tools.egg-info/*
+src/jetraw_tools.egg-info/*
