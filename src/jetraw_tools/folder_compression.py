@@ -5,11 +5,12 @@ import ome_types
 import tifffile
 import dpcore
 import locale
-from .utils import flatten_dict, dict2ome, prepare_images, add_extension, create_compress_folder
+from .utils import flatten_dict, dict2ome, prepare_images, add_extension, create_compress_folder, convert_to_ascii
 from .tiff_writer import imwrite
+from .tiff_reader import imread
 
-
-def compress_folder(folder_path, 
+def compression_tool(folder_path, 
+                     mode = "compress",
                     calibration_file=None, 
                     identifier="", 
                     image_extension=".tif", 
@@ -35,8 +36,14 @@ def compress_folder(folder_path,
     """
 
     # Check image_extension
-    if image_extension not in [".tif", ".nd2", ".ome.tif"]:
-        raise ValueError("The image_extension must be either '.tif', '.nd2', or '.ome.tif'.")
+    if mode == "decompress":
+        suffix = "_decompressed"
+    else:
+        suffix = "_compressed"
+    
+    valid_extensions = [".tif", ".nd2", ".ome.tif", ".p.tif", ".p.tiff"]
+    if image_extension not in valid_extensions:
+        raise ValueError(f"The image_extension must be either {valid_extensions}.")
     
     if calibration_file is None:
         raise ValueError("The calibration_file must be provided.")
@@ -45,7 +52,7 @@ def compress_folder(folder_path,
         raise ValueError("The identifier must be provided.")
 
     # Create output folder
-    output_folder=create_compress_folder(folder_path)
+    output_folder=create_compress_folder(folder_path, suffix=suffix)
 
     # Get images
     if os.path.isfile(folder_path) and folder_path.endswith(image_extension):
@@ -56,13 +63,15 @@ def compress_folder(folder_path,
     print(f"From folder: {folder_path}")
     for image_file in image_files:
 
+
         if verbose:
             print(f"Compressing {image_file}...")
+        
+        input_filename = os.path.join(folder_path, image_file)
         # If .nd2
         if image_extension == ".nd2":
-        # Convert each ND2 image to TIFF
-            input_nd2_filename = os.path.join(folder_path, image_file)
-            with nd2.ND2File(input_nd2_filename) as img_nd2:
+            # Convert each ND2 image to TIFF
+            with nd2.ND2File(input_filename) as img_nd2:
                 img_map = img_nd2.asarray().astype(np.uint16)
 
                 if process_metadata:
@@ -75,46 +84,70 @@ def compress_folder(folder_path,
                     metadata=ome_metadata
                     
         # If .OME.TIFF
-        if image_extension == "ome.tif":
-            input_tiff_filename = os.path.join(folder_path, image_file)
-            with tifffile.TiffFile(input_tiff_filename) as tif:
+        if image_extension == ".ome.tif":
+            with tifffile.TiffFile(input_filename) as tif:
                 img_map = tif.asarray()
                 if process_metadata:
                     metadata = tif.ome_metadata
                     metadata = ome_types.from_tiff(metadata)
 
+        # If p.TIFF
+        if image_extension == ".p.tif" or image_extension == ".p.tiff" :
+            img_map = imread(input_filename)
+            metadata = {}
+            with tifffile.TiffFile(input_filename) as tif:
+                if tif.imagej_metadata:
+                    if process_metadata:
+                        metadata["imagej_metadata"] = tif.imagej_metadata
+                        metadata["ome_metadata"] = tif.ome_metadata
+
         # If .TIFF 
         if image_extension == ".tif":
-            input_tiff_filename = os.path.join(folder_path, image_file)#
-            with tifffile.TiffFile(input_tiff_filename) as tif:
+            with tifffile.TiffFile(input_filename) as tif:
                 if tif.imagej_metadata:
                     img_map = tif.asarray()
                     if process_metadata:
                         metadata = tif.imagej_metadata
-        
-        # Set OME Flag
-        if process_metadata and image_extension in [".nd2", ".ome.tif"]:
-            ome_bool=True
-        elif process_metadata and image_extension==".tif":
-            ome_bool=False
+
+
+        if mode == "compress":
+            # Set OME Flag
+            if process_metadata and image_extension in [".nd2", ".ome.tif"]:
+                ome_bool=True
+            elif process_metadata and image_extension==".tif":
+                ome_bool=False
+            else:
+                metadata=None
+                ome_bool=False
+            
+            # Validate output_tiff_filename
+            output_tiff_filename = os.path.join(output_folder, image_file)
+            print(f"Compressing image {image_file}...")
+            output_tiff_filename=add_extension(output_tiff_filename, ome=ome_bool)
+            process_image(img_map, output_tiff_filename, calibration_file, identifier, metadata, ome_bool, metadata_json)
         else:
-            metadata=None
-            ome_bool=False
-        
-        # Validate output_tiff_filename
-        output_tiff_filename = os.path.join(output_folder, image_file)
-        print(f"Compressing image {image_file}...")
-        output_tiff_filename=add_extension(output_tiff_filename, ome=ome_bool)
-        process_image(img_map, output_tiff_filename, calibration_file, identifier, metadata, ome_bool, metadata_json)
+            # Decompress
+            base, ext = os.path.splitext(image_file)
+            output_tiff_filename = os.path.join(output_folder, base + "_decompressed" + ".tif")
+            print(f"Decompressing image {image_file}...")
+            tifffile.imwrite(output_tiff_filename, img_map, description="")
+            metadata=flatten_dict(metadata)
+            metadata=convert_to_ascii(metadata)
+            
+            if process_metadata and metadata:
+                try:
+                    tifffile.tiffcomment(output_tiff_filename, metadata)
+                except:
+                    print("Metadata could not be added to the decompressed image.")
 
         # Check if output file exists and has size > 5% of the original image
         if remove_source:
             if os.path.exists(output_tiff_filename):
-                original_size = os.path.getsize(input_tiff_filename)
+                original_size = os.path.getsize(input_filename)
                 compressed_size = os.path.getsize(output_tiff_filename)
                 if compressed_size > 0.05 * original_size:
                     # Delete original image
-                    os.remove(input_tiff_filename)
+                    os.remove(input_filename)
     
     return True
 
