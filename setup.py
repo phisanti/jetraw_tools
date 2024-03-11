@@ -6,7 +6,7 @@ with open('requirements.txt') as f:
 setup(
     name='jetraw_tools',
     version='0.2.0',
-    python_requires='>3.9',
+    python_requires='>3.8',
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
     author='Santiago Cano-Muniz',
