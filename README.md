@@ -11,7 +11,7 @@ To install `jetraw_tools`, follow these simple steps:
 4. Clone this repository to your local machine using the following command:
 
 ```shell
-pip install git+https://github.com/your-username/jetraw_tools.git
+pip install git+https://github.com/phisanti/jetraw_tools.git
 ```
 
 ## 📖 Usage
