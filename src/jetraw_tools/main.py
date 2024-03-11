@@ -1,9 +1,10 @@
 import os
 import re
 import argparse
+import locale
+import configparser
 from jetraw_tools.compression_tool import CompressionTool
 from jetraw_tools.config import configjrt
-import configparser
 
 def main():
 
@@ -20,7 +21,9 @@ def main():
     parser.add_argument('--remove', action='store_true', default=False, help='Delete original images')
     parser.add_argument('--verbose', action='store_true', default=True, help='Prints verbose output')
 
+    # Pase and set locale
     args = parser.parse_args()
+    locale.setlocale(locale.LC_ALL, locale.getlocale())
     
     # Set default calibration file path
     if args.settings:
