@@ -7,6 +7,7 @@ from .tiff_reader import TiffReader, imread  # noqa: F401
 from .tiff_writer import TiffWriter_5D, imwrite  # noqa: F401
 import ctypes
 import numpy as np
+import locale
 
 # TODO: these lines of code had a reason to be here but still not very clear when
 # are really needed. More investigation needed. In windows environment these lines
@@ -20,7 +21,7 @@ import numpy as np
 
 #import locale
 
-#locale.setlocale(locale.LC_ALL, locale.getlocale())
+locale.setlocale(locale.LC_ALL, locale.getlocale())
 
 
 def encode_raw(image):
