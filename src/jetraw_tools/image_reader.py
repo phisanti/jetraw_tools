@@ -60,12 +60,14 @@ class ImageReader:
         return img_map, metadata
 
 
-    def read_p_tiff(self):
+    def read_p_tiff(self, ome_bool = False):
         img_map = imread(self.input_filename)
-        metadata = {}
         with tifffile.TiffFile(self.input_filename) as tif:
-            metadata["imagej_metadata"] = tif.imagej_metadata
-            metadata["ome_metadata"] = tif.ome_metadata
+            if ome_bool:
+                metadata = ome_types.from_xml(tif.ome_metadata)
+            else:
+                metadata = tif.imagej_metadata
+
         return img_map, metadata
 
 
@@ -80,12 +82,16 @@ class ImageReader:
         if self.image_extension == ".nd2":
             return self.read_nd2_image()
 
+        if self.image_extension in [".p.tif", ".p.tiff", ".ome.p.tif", ".ome.p.tiff"]:
+            if self.image_extension in [".ome.p.tif", ".ome.p.tiff"]:
+                ome_bool = True
+            else:
+                ome_bool = False
+            return self.read_p_tiff(ome_bool)
+
         if self.image_extension in [".ome.tif", ".ome.tiff"]:
             return self.read_ome_tiff()
 
-        if self.image_extension in [".p.tif", ".p.tiff", ".ome.p.tif", ".ome.p.tiff"]:
-            return self.read_p_tiff()
-        
         if self.image_extension in [".tif", ".tiff"]:
             return self.read_tif_image()
         
