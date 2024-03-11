@@ -20,12 +20,12 @@ Once installed, you can use the jetraw_tools from the command line of from a pyt
 You can directly compress an image via:
 
 ```
-jetraw_tools /path/to/image_or_folder -c "calibration_file.dat" -i "identifier"
+jetraw_tools -c /path/to/image_or_folder -c "calibration_file.dat" -i "identifier"  --extension ".ome.tiff"
 ```
 The calibrartion file and identifier are required for the compression. They can be provided each time or you can set a configuration file via.
 
 ```
-jetraw_tools --config
+jetraw_tools --settings
 ```
 
 This command will:
@@ -33,10 +33,19 @@ This command will:
 - Copy a calibration .dat
 - Store a list of identifiers
 
-Then, default calibration .dat file and identifier don't need to be specified each time.
+Then, default calibration .dat file and identifier don't need to be specified each time. Therefore, you can run:
+
+```
+jetraw_tools -c "sample_images/" --extension ".ome.tiff"
+jetraw_tools -d "sample_images/" --extension ".ome.p.tiff"
+
+```
+
 
 ### 📋 Options 
-- -c, --config: Re-initialize configuration
+- -c, --compress: path to image(s) to compress
+- -d, --decompress: path to image(s) to decompress
+- -s, --settings: Re-initialize configuration
 - --calibration_file: Path to calibration .dat file
 - --identifier: Image capture mode identifier
 - --extension: Input image file extension (default .tif)
