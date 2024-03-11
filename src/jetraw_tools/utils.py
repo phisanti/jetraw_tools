@@ -6,7 +6,7 @@ from ome_types.model import MapAnnotation, Map
 from ome_types.model.map import M
 
 
-def add_extension(input_filename, ome=False):
+def add_extension(input_filename, image_extension, mode, ome=False):
 
     """Add an extension to a filename.
     
@@ -18,11 +18,20 @@ def add_extension(input_filename, ome=False):
     :rtype: str
     """
 
-    base, ext = os.path.splitext(input_filename)
-    if ome:
-        output_filename = f"{base}.ome.p.tiff" 
+    base = input_filename.replace(image_extension, "")
+
+    if mode == "compress":
+        if ome:
+            output_filename = f"{base}.ome.p.tiff" 
+        else:
+            output_filename = f"{base}.p.tiff"
+    elif mode == "decompress":
+        if ome:
+            output_filename = f"{base}.ome.tiff"
+        else:
+            output_filename = f"{base}.tiff"
     else:
-        output_filename = f"{base}.p.tiff"
+        raise ValueError(f"The mode set to {mode}, it must be either 'compress' or 'decompress'.")
 
     return output_filename
 

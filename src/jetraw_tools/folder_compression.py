@@ -40,11 +40,7 @@ def compression_tool(folder_path,
         suffix = "_decompressed"
     else:
         suffix = "_compressed"
-    
-    valid_extensions = [".tif", ".nd2", ".ome.tif", ".p.tif", ".p.tiff"]
-    if image_extension not in valid_extensions:
-        raise ValueError(f"The image_extension must be either {valid_extensions}.")
-    
+        
     if calibration_file is None:
         raise ValueError("The calibration_file must be provided.")
     
