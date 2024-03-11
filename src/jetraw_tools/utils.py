@@ -6,16 +6,12 @@ from ome_types.model import MapAnnotation, Map
 from ome_types.model.map import M
 
 
-def add_extension(input_filename, image_extension, mode, ome=False):
-
+def add_extension(input_filename: str, image_extension: str, mode: str, ome: bool = False) -> str:
     """Add an extension to a filename.
     
     :param filename: The filename to add the extension to
-    :type filename: str
     :param ext: The extension to add, including the dot
-    :type ext: str
     :returns: The filename with the extension added
-    :rtype: str
     """
 
     base = input_filename.replace(image_extension, "")
@@ -36,15 +32,12 @@ def add_extension(input_filename, image_extension, mode, ome=False):
     return output_filename
 
 
-def create_compress_folder(folder_path, suffix="_compressed"):
+def create_compress_folder(folder_path: str, suffix: str = "_compressed") -> str:
     """Create a folder for compressed images.
     :param folder_path: The path to the with the source images.
-    :type folder_path: str
     :param suffix: The suffix to append to the compressed folder name. 
                   Default is "_compressed".
-    :type suffix: str
     :returns: The path to the newly created compressed folder.
-    :rtype: str
     """
         
     path = os.path.normpath(folder_path)
@@ -58,14 +51,12 @@ def create_compress_folder(folder_path, suffix="_compressed"):
     return compressed_folder_path
 
 
-def convert_to_ascii(data):
+def convert_to_ascii(data : dict) -> dict:
     """
     Converts the given data to ASCII encoding.
 
     :param data: The data to be converted.
-    :type data: bytes or bytearray
     :return: The converted data in ASCII encoding.
-    :rtype: str
     """
     if isinstance(data, dict):
         return {k: convert_to_ascii(v) for k, v in data.items()}
@@ -75,14 +66,12 @@ def convert_to_ascii(data):
         return data
     
 
-def flatten_dict(d):
+def flatten_dict(d : dict) -> dict:
     """
     Recursively flattens a nested dictionary.
 
     :param d: The dictionary to be flattened.
-    :type d: dict
     :return: The flattened dictionary.
-    :rtype: dict
     """
     result = {}
     for key, value in d.items():
@@ -93,7 +82,9 @@ def flatten_dict(d):
     return result
 
 
-def serialise(data):
+def serialise(data : dict) -> str:
+    """Serialise dictionary to write as json or similar"""
+
     if isinstance(data, dict):
         return {key: serialise(value) for key, value in data.items()}
     elif isinstance(data, list):
@@ -110,7 +101,7 @@ def serialise(data):
         return str(data)
 
 
-def dict2ome(metadata):
+def dict2ome(metadata : dict) -> MapAnnotation:
     """Converts metadata dictionary to OME MapAnnotation"""
     
     map_annotation = MapAnnotation(value=Map(m=[
@@ -121,7 +112,7 @@ def dict2ome(metadata):
     return map_annotation
 
 
-def inspect_metadata(image_path, verbose=False):
+def inspect_metadata(image_path :  str, verbose : bool =False) -> dict:
     """
     Inspects the metadata of a TIFF image file.
 
@@ -184,8 +175,8 @@ def prepare_images(image_stack, depth=0, identifier=False, First_call=True, verb
 
     if not isinstance(image_stack, np.ndarray):
         raise TypeError("The 'image_stack' parameter must be a NumPy array.")
-    elif First_call:
-        print(f'Image stack shape: {image_stack.shape}')
+    elif First_call and verbose:
+        print(f'Compressing image to: {image_stack.shape}')
     
     if not identifier:
         raise ValueError("The 'identifier' parameter is not provided. Please provide an identifier.")

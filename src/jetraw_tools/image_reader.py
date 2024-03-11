@@ -5,21 +5,17 @@ import ome_types
 import os
 from .tiff_reader import imread
 from .utils import flatten_dict, dict2ome
-
+from typing import Tuple, Union, Dict, Any
 
 class ImageReader:
     """
-    The ImageReader class provides methods to read different types of image files.
-    Each method returns a tuple containing the image data and metadata.
+    A class for reading images in various formats.
 
-    Methods:
-        read_nd2_image(): Reads .nd2 image files.
-        read_ome_tiff(): Reads .ome.tif image files.
-        read_p_tiff(): Reads .p.tif image files.
-        read_tif_image(): Reads .tif image files.
-        read_image(): Reads the image file specified in the constructor.
+    :param input_filename: The input filename.
+    :type input_filename: str
+    :param image_extension: The image file extension.
+    :type image_extension: str
     """
-    
 
     def __init__(self, input_filename : str, image_extension : str):
         
@@ -36,7 +32,7 @@ class ImageReader:
         pass
     
 
-    def read_nd2_image(self):
+    def read_nd2_image(self) -> Tuple[np.ndarray, ome_types.OME]:
         with nd2.ND2File(self.input_filename) as img_nd2:
             img_map = img_nd2.asarray().astype(np.uint16)
 
@@ -51,7 +47,7 @@ class ImageReader:
         return img_map, metadata
 
 
-    def read_ome_tiff(self):
+    def read_ome_tiff(self) -> Tuple[np.ndarray, ome_types.OME]:
         metadata = {}
         with tifffile.TiffFile(self.input_filename) as tif:
             img_map = tif.asarray()
@@ -60,7 +56,7 @@ class ImageReader:
         return img_map, metadata
 
 
-    def read_p_tiff(self, ome_bool = False):
+    def read_p_tiff(self, ome_bool: bool = False) -> Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME]]:
         img_map = imread(self.input_filename)
         with tifffile.TiffFile(self.input_filename) as tif:
             if ome_bool:
@@ -71,14 +67,19 @@ class ImageReader:
         return img_map, metadata
 
 
-    def read_tif_image(self): 
+    def ead_tif_image(self) -> Tuple[np.ndarray, Dict[str, Any]]: 
         with tifffile.TiffFile(self.input_filename) as tif:
             img_map = tif.asarray()
             metadata = tif.imagej_metadata
         return img_map, metadata
     
     
-    def read_image(self):
+    def read_image(self) -> Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME]]:
+        """
+        Read any image.
+
+        :return: The image map and metadata.
+        """
         if self.image_extension == ".nd2":
             return self.read_nd2_image()
 

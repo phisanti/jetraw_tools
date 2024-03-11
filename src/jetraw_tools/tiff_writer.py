@@ -5,7 +5,7 @@ from .jetraw_tiff import JetrawTiff
 import json
 from .utils import convert_to_ascii, flatten_dict, serialise
 import json
-
+from typing import Union 
 class TiffWriter_5D:
     """TiffWriter writes numpy array to a JetRaw compressed TIFF file.
 
@@ -20,17 +20,12 @@ class TiffWriter_5D:
 
     """
 
-    def __init__(self, filepath, description=""):
+    def __init__(self, filepath: str, description: str = "") -> None:
         """Open TIFF file for writing.
-        An empty TIFF file is created if there is no input data passed. .
-        Parameters
-        ----------
-        filepat : str, path-like
-            File name for output TIFF file
-        description : str
-            The subject of the image. Must be 7-bit ASCII. Cannot be used with
-            the ImageJ or OME formats. Saved with the first page of a series
-            only.
+        Open TIFF file for writing. An empty TIFF file is created if there is no input data passed.
+
+        :param str filepath: File name for output TIFF file
+        :param str description: The subject of the image. Must be 7-bit ASCII. Cannot be used with the ImageJ or OME formats. Saved with the first page of a series only.
         """
 
 
@@ -53,23 +48,13 @@ class TiffWriter_5D:
             self._jrtif.close()
         self._jrtif = None
 
-    def write(self, image_buffer):
+    def write(self, image_buffer: np.ndarray) -> None:
         """
-        Write image buffer to TIFF file.
+        Write image buffer to .p.tiff file.
 
-        Parameters
-        ----------
-        image_buffer : numpy.ndarray
-            Image data to write. 
-            Must have dtype uint16.
-
-        Raises
-        ------
-        ValueError
-            If image dimensions are inconsistent.
-        TypeError
-            If image dtype is not uint16.
-
+        :param numpy.ndarray image_buffer: Image data to write. Must have dtype uint16.
+        :raises ValueError: If image dimensions are inconsistent.
+        :raises TypeError: If image dtype is not uint16.
         """
 
         # Raise warnings
@@ -124,21 +109,10 @@ def imwrite(output_tiff_filename, input_image, description=""):
     """Write numpy array to a JetRaw compressed TIFF file.
     Refer to the TiffWriter class and its write function for more information.
 
-    Parameters
-    ----------
-    output_tiff_filename : str, path-like
-        File name of output TIFF file to be written into disk.
-    input_image : array-like
-        Input image buffer. Dimensions are assumed to be image depth,
-        length, width.
-        None is not taken into account for the moment.
-    description : str
-        The subject of the image. Saved with the first page only.
-
-    Returns
-    -------
-    True
-
+    :param output_tiff_filename: File name of output TIFF file to be written into disk.
+    :param input_image: Input image buffer.
+    :param description: The subject of the image. Saved with the first page only.
+    :return: True
     """
     
     # Check if input image is contiguous
@@ -151,8 +125,22 @@ def imwrite(output_tiff_filename, input_image, description=""):
     
     return True
 
-def metadata_writer(output_tiff_filename, metadata=None, ome_bool=True, imagej=False, as_json=True):
-    
+def metadata_writer(output_tiff_filename: str, 
+                    metadata: Union[ome_types.OME, dict] = None, 
+                    ome_bool: bool = True, 
+                    imagej: bool = False, 
+                    as_json: bool = True) -> bool:
+    """
+    Write metadata to the final image file.
+
+    :param output_tiff_filename: The output TIFF filename.
+    :param metadata: The metadata to write, defaults to None.
+    :param ome_bool: Whether to use OME metadata, defaults to True.
+    :param imagej: Whether to use ImageJ metadata, defaults to False.
+    :param as_json: Whether to write metadata as JSON, defaults to True.
+    :return: Whether the operation was successful.
+    """
+
     if as_json:
         if isinstance(metadata, ome_types.OME):
             metadata_dump = json.loads(metadata.json())

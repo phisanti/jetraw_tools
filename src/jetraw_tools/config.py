@@ -40,7 +40,19 @@ def configjrt():
     config_identifiers(config_folder)
 
 
-def config_identifiers(config_folder):
+def config_identifiers(config_folder : str) -> None:
+
+    """
+    Configure identifiers in the configuration file.
+
+    This function reads the existing identifiers from the configuration file,
+    provides an option to remove all identifiers, and allows the user to add new identifiers.
+    The updated identifiers are then written back to the configuration file.
+
+    :param config_folder: The path to the folder containing the configuration file.
+    :type config_folder: str
+    """
+        
     config_file = os.path.join(config_folder, "jetraw_tools.cfg")
     config = configparser.ConfigParser()
     config.read(config_file)
@@ -75,7 +87,15 @@ def config_identifiers(config_folder):
     with open(config_file, 'w') as f:
         config.write(f)  
 
-def copy_calibration_file(config_folder):
+def copy_calibration_file(config_folder : str) -> None:
+    """Copy calibration file
+    Interactively copies a '.dat' calibration file to a configuration 
+    folder and updates the configuration file.
+
+    :param config_folder: Path to the configuration folder.
+    :type config_folder: str
+    """
+
     while True:
     
         calibration_file = input("Enter the path to the calibration file (or 'enter' to quit): ")

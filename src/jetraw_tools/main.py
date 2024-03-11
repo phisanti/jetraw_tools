@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--metadata', action='store_true', default=True, help='Process metadata')
     parser.add_argument('--json', action='store_true', default=True, help='Save metadata as JSON')
     parser.add_argument('--remove', action='store_true', default=False, help='Delete original images')
+    parser.add_argument('--verbose', action='store_true', default=True, help='Prints verbose output')
 
     args = parser.parse_args()
     
@@ -43,7 +44,8 @@ def main():
         identifier = args.identifier
 
     
-    print(f"Using calibration file: {os.path.basename(cal_file)} and identifier: {identifier}")
+    if args.verbose:
+        print(f"Using calibration file: {os.path.basename(cal_file)} and identifier: {identifier}")
 
     if identifier == "" or cal_file == "":
         raise ValueError("Identifier and calibration file must be set. Use --config to set them or provide them as arguments.")
@@ -58,7 +60,7 @@ def main():
         full_path = os.path.join(os.getcwd(), args.decompress)
         mode = "decompress"
         process_json=False
-    compressor = CompressionTool(cal_file, identifier)
+    compressor = CompressionTool(cal_file, identifier, args.verbose)
     compressor.process_folder(full_path, mode, args.extension, args.metadata, ome_bool=True, metadata_json=process_json, remove_source=args.remove)
 
 if __name__ == '__main__':

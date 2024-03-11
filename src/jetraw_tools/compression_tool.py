@@ -8,13 +8,32 @@ from .tiff_writer import imwrite, metadata_writer
 from .image_reader import ImageReader
 
 class CompressionTool:
-    
-    def __init__(self, calibration_file=None, identifier="", verbose=False):
+    """
+    A tool for compressing and decompressing images using the JetRaw algorithm.
+
+    :param calibration_file: The calibration file to use.
+    :type calibration_file: str, optional
+    :param identifier: The identifier for the images.
+    :type identifier: str, optional
+    :param verbose: Whether to print verbose output.
+    :type verbose: bool, optional
+    """
+
+
+    def __init__(self, calibration_file: str = None, identifier: str = "", verbose: bool = False):
         self.calibration_file = calibration_file
         self.identifier = identifier
         self.verbose = verbose
     
-    def list_files(self, folder_path, image_extension):
+
+    def list_files(self, folder_path: str, image_extension: str) -> list:
+        """
+        List all files in a folder with a specific extension.
+
+        :param folder_path: The path to the folder.
+        :param image_extension: The image file extension.
+        :return: A list of image files.
+        """
         
         if os.path.isfile(folder_path) and folder_path.endswith(image_extension):
             image_files = [folder_path]
@@ -26,7 +45,17 @@ class CompressionTool:
         return image_files
 
 
-    def compress_image(self, img_map, target_file, metadata, ome_bool=True, metadata_json=True):
+    def compress_image(self, img_map: np.ndarray, target_file: str, metadata: dict, ome_bool: bool = True, metadata_json: bool = True) -> bool:
+        """
+        Compress an image.
+
+        :param img_map: The image map.
+        :param target_file: The target file.
+        :param metadata: The metadata.
+        :param ome_bool: Whether to use OME metadata.
+        :param metadata_json: Whether to write metadata as JSON.
+        :return: Whether the operation was successful.
+        """
 
         # Prepare input image
         locale.setlocale(locale.LC_ALL, locale.getlocale())
@@ -46,9 +75,17 @@ class CompressionTool:
         return True
 
 
-    def decompress_image(self, img_map, target_file, metadata, ome_bool=True, metadata_json=False):
+    def decompress_image(self, img_map: np.ndarray, target_file: str, metadata: dict, ome_bool: bool = True, metadata_json: bool = False) -> bool:
+        """
+        Decompress an image.
 
-        #tifffile.imwrite(target_file, img_map, description="")
+        :param img_map: The image map.
+        :param target_file: The target file.
+        :param metadata: The metadata.
+        :param ome_bool: Whether to use OME metadata.
+        :param metadata_json: Whether to write metadata as JSON.
+        :return: Whether the operation was successful.
+        """
 
         with tifffile.TiffWriter(target_file) as tif:
             tif.write(img_map)     
@@ -63,7 +100,14 @@ class CompressionTool:
         return True
 
 
-    def remove_files(self, output_tiff_filename, input_filename):
+    def remove_files(self, output_tiff_filename: str, input_filename: str) -> None:
+        """
+        Remove files if the new file exists and its size is > 5% of the original.
+
+        :param output_tiff_filename: The output TIFF filename.
+        :param input_filename: The input filename.
+        """
+
         # Verify that the new file exist with size > 5%original before removal
         if os.path.exists(output_tiff_filename):
             original_size = os.path.getsize(input_filename)
@@ -72,20 +116,40 @@ class CompressionTool:
                 os.remove(input_filename)
 
 
-    def process_folder(self, folder_path, mode="compress", image_extension=".tif", process_metadata=True, ome_bool=True, metadata_json=True, remove_source=False):
+    def process_folder(self, 
+                       folder_path: str, 
+                       mode: str = "compress", 
+                       image_extension: str = ".tiff", 
+                       process_metadata: bool = True, 
+                       ome_bool: bool = True, 
+                       metadata_json: bool = True, 
+                       remove_source: bool = False) -> None:
+        """
+        Process a folder of images.
 
-        # Check image_extension
+        :param folder_path: The path to the folder.
+        :param mode: The mode, either "compress" or "decompress".
+        :param image_extension: The image file extension.
+        :param process_metadata: Whether to process metadata.
+        :param ome_bool: Whether to use OME metadata.
+        :param metadata_json: Whether to write metadata as JSON.
+        :param remove_source: Whether to remove the source files.
+        """
+
+        # Create output folder
         if mode == "decompress":
             suffix = "_decompressed"
         else:
-            suffix = "_compressed"
-        # Create output folder
-            
+            suffix = "_compressed"    
         output_folder=create_compress_folder(folder_path, suffix=suffix)
         image_files = self.list_files(folder_path, image_extension)
 
+        # Iterate over images
         for image_file in image_files:
 
+            if self.verbose:
+                print(f"Processing {image_file}...")
+                
             # Input/output files
             input_filename = os.path.join(folder_path, image_file)
             output_filename = os.path.join(output_folder, image_file)
