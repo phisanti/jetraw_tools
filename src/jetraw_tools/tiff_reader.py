@@ -89,8 +89,7 @@ class TiffReader:
                 pages_list = list(pages)
             except TypeError as e:
                 raise TypeError(
-                    f"Invalid type for pages: {e}."
-                    " Use e.g. array, list, int."
+                    f"Invalid type for pages: {e}." " Use e.g. array, list, int."
                 )
             num_pages = len(pages_list)
 
@@ -133,7 +132,6 @@ def read_metadata(input_tiff_filename, ome=False):
 
     # Read the TIFF file
     with tifffile.TiffFile(input_tiff_filename) as tif:
-
         if ome:
             metadata_read = tif.ome_metadata
             metadata_read = ome_types.from_xml(metadata_read)

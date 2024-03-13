@@ -6,9 +6,11 @@ from ome_types.model import MapAnnotation, Map
 from ome_types.model.map import M
 
 
-def add_extension(input_filename: str, image_extension: str, mode: str, ome: bool = False) -> str:
+def add_extension(
+    input_filename: str, image_extension: str, mode: str, ome: bool = False
+) -> str:
     """Add an extension to a filename.
-    
+
     :param filename: The filename to add the extension to
     :param ext: The extension to add, including the dot
     :returns: The filename with the extension added
@@ -18,7 +20,7 @@ def add_extension(input_filename: str, image_extension: str, mode: str, ome: boo
 
     if mode == "compress":
         if ome:
-            output_filename = f"{base}.ome.p.tiff" 
+            output_filename = f"{base}.ome.p.tiff"
         else:
             output_filename = f"{base}.p.tiff"
     elif mode == "decompress":
@@ -27,7 +29,9 @@ def add_extension(input_filename: str, image_extension: str, mode: str, ome: boo
         else:
             output_filename = f"{base}.tiff"
     else:
-        raise ValueError(f"The mode set to {mode}, it must be either 'compress' or 'decompress'.")
+        raise ValueError(
+            f"The mode set to {mode}, it must be either 'compress' or 'decompress'."
+        )
 
     return output_filename
 
@@ -35,23 +39,25 @@ def add_extension(input_filename: str, image_extension: str, mode: str, ome: boo
 def create_compress_folder(folder_path: str, suffix: str = "_compressed") -> str:
     """Create a folder for compressed images.
     :param folder_path: The path to the with the source images.
-    :param suffix: The suffix to append to the compressed folder name. 
+    :param suffix: The suffix to append to the compressed folder name.
                   Default is "_compressed".
     :returns: The path to the newly created compressed folder.
     """
-        
+
     path = os.path.normpath(folder_path)
     folder_path_split = path.split(os.sep)
     compressed_folder_name = folder_path_split[-1] + suffix
-    compressed_folder_path = os.path.join(os.sep.join(folder_path_split[:-1]), compressed_folder_name)
-    
+    compressed_folder_path = os.path.join(
+        os.sep.join(folder_path_split[:-1]), compressed_folder_name
+    )
+
     if not os.path.exists(compressed_folder_path):
         os.makedirs(compressed_folder_path)
-    
+
     return compressed_folder_path
 
 
-def convert_to_ascii(data : dict) -> dict:
+def convert_to_ascii(data: dict) -> dict:
     """
     Converts the given data to ASCII encoding.
 
@@ -61,12 +67,12 @@ def convert_to_ascii(data : dict) -> dict:
     if isinstance(data, dict):
         return {k: convert_to_ascii(v) for k, v in data.items()}
     elif isinstance(data, str):
-        return data.encode('ascii', 'ignore').decode()
+        return data.encode("ascii", "ignore").decode()
     else:
         return data
-    
 
-def flatten_dict(d : dict) -> dict:
+
+def flatten_dict(d: dict) -> dict:
     """
     Recursively flattens a nested dictionary.
 
@@ -82,7 +88,7 @@ def flatten_dict(d : dict) -> dict:
     return result
 
 
-def serialise(data : dict) -> str:
+def serialise(data: dict) -> str:
     """Serialise dictionary to write as json or similar"""
 
     if isinstance(data, dict):
@@ -101,18 +107,17 @@ def serialise(data : dict) -> str:
         return str(data)
 
 
-def dict2ome(metadata : dict) -> MapAnnotation:
+def dict2ome(metadata: dict) -> MapAnnotation:
     """Converts metadata dictionary to OME MapAnnotation"""
-    
-    map_annotation = MapAnnotation(value=Map(m=[
-                    M(k=_key, value=str(_value))
-                    for _key, _value in metadata.items()
-                ]))
-    
+
+    map_annotation = MapAnnotation(
+        value=Map(m=[M(k=_key, value=str(_value)) for _key, _value in metadata.items()])
+    )
+
     return map_annotation
 
 
-def inspect_metadata(image_path :  str, verbose : bool =False) -> dict:
+def inspect_metadata(image_path: str, verbose: bool = False) -> dict:
     """
     Inspects the metadata of a TIFF image file.
 
@@ -125,25 +130,27 @@ def inspect_metadata(image_path :  str, verbose : bool =False) -> dict:
 
     with tifffile.TiffFile(image_path) as tif:
         # Access metadata for each page (image) in the file
-        metadata['pages'] = []
+        metadata["pages"] = []
         for page in tif.pages:
             page_metadata = {
-                'dimensions': page.shape,
-                'data_type': page.dtype,
-                'compression': page.compression,
-                'tags': {tag_id: str(tag_value) for tag_id, tag_value in page.tags.items()},
+                "dimensions": page.shape,
+                "data_type": page.dtype,
+                "compression": page.compression,
+                "tags": {
+                    tag_id: str(tag_value) for tag_id, tag_value in page.tags.items()
+                },
             }
-            metadata['pages'].append(page_metadata)
+            metadata["pages"].append(page_metadata)
 
             if verbose:
                 print(f"Page {page.index} metadata: {page_metadata}")
 
         # Access OME-XML metadata (if present)
         if tif.ome_metadata:
-            metadata['ome_metadata'] = tif.ome_metadata
+            metadata["ome_metadata"] = tif.ome_metadata
 
         if tif.imagej_metadata:
-            metadata['imagej_metadata'] = tif.imagej_metadata
+            metadata["imagej_metadata"] = tif.imagej_metadata
 
         if verbose:
             print(f"OME-XML metadata: {metadata.get('ome_metadata')}")
@@ -152,7 +159,9 @@ def inspect_metadata(image_path :  str, verbose : bool =False) -> dict:
     return metadata
 
 
-def prepare_images(image_stack, depth=0, identifier=False, First_call=True, verbose=False):
+def prepare_images(
+    image_stack, depth=0, identifier=False, First_call=True, verbose=False
+):
     """
     Prepare images in the image stack for processing.
 
@@ -170,27 +179,28 @@ def prepare_images(image_stack, depth=0, identifier=False, First_call=True, verb
     """
 
     # Check image and identifier
-    if not image_stack.flags['C_CONTIGUOUS']:
+    if not image_stack.flags["C_CONTIGUOUS"]:
         raise ValueError("The input image must be contiguous for proper compression.")
 
     if not isinstance(image_stack, np.ndarray):
         raise TypeError("The 'image_stack' parameter must be a NumPy array.")
     elif First_call and verbose:
-        print(f'Compressing image to: {image_stack.shape}')
-    
+        print(f"Compressing image to: {image_stack.shape}")
+
     if not identifier:
-        raise ValueError("The 'identifier' parameter is not provided. Please provide an identifier.")
+        raise ValueError(
+            "The 'identifier' parameter is not provided. Please provide an identifier."
+        )
 
     # Prepare images in the stack
     if len(image_stack.shape) > 2:
-
         for i in range(image_stack.shape[depth]):
             prepare_images(image_stack[i], depth, identifier, First_call=False)
 
     elif len(image_stack.shape) == 2:
         if verbose:
             print("compress image")
-        
+
         dpcore.prepare_image(image_stack, identifier)
 
     depth += 1
@@ -198,17 +208,20 @@ def prepare_images(image_stack, depth=0, identifier=False, First_call=True, verb
     return True
 
 
-def reshape_tiff(image_stack, new_frames, new_slices = 1, new_channels = 1):
-    
-    # Get dimensions 
+def reshape_tiff(image_stack, new_frames, new_slices=1, new_channels=1):
+    # Get dimensions
     z, y, x = image_stack.shape
     total_elements_5d = new_frames * new_slices * new_channels
 
     # Check if dimensions are compatible
     if z != total_elements_5d:
-        raise ValueError("The total number of elements in the 3D stack must be equal to the total number of elements in the 5D stack.")
+        raise ValueError(
+            "The total number of elements in the 3D stack must be equal to the total number of elements in the 5D stack."
+        )
 
     # Reshape the 3D stack into a 5D stack
-    image_stack_5d = np.reshape(image_stack, (new_frames, new_slices, new_channels, y, x))
+    image_stack_5d = np.reshape(
+        image_stack, (new_frames, new_slices, new_channels, y, x)
+    )
 
     return image_stack_5d

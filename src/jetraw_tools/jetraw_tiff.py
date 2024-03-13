@@ -58,7 +58,7 @@ def _check_os():
 
 def _load_libraries():
     """Load the Jetraw dynamic libraries"""
-    
+
     system = _check_os()
     # search for jetraw dir
 
@@ -85,9 +85,10 @@ def _load_libraries():
     # Register jetraw_encode function signature
     _jetraw_lib.jetraw_encode.argtypes = [
         ctypes.POINTER(ctypes.c_uint16),
-        ctypes.c_uint32, ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
         ctypes.c_char_p,
-        ctypes.POINTER(ctypes.c_int32)
+        ctypes.POINTER(ctypes.c_int32),
     ]
 
     # Register jetraw_decode function signature
@@ -95,7 +96,7 @@ def _load_libraries():
         ctypes.c_char_p,
         ctypes.c_int32,
         ctypes.POINTER(ctypes.c_uint16),
-        ctypes.c_int32
+        ctypes.c_int32,
     ]
 
     # Register jetraw_tiff_open function signature
@@ -142,9 +143,7 @@ def dp_status_as_exception(func):
     def wrapper(*args, **kwargs):
         dp_status = func(*args, **kwargs)
         if dp_status != 0:
-            message = _jetraw_lib.dp_status_description(dp_status).decode(
-                "utf-8"
-            )
+            message = _jetraw_lib.dp_status_description(dp_status).decode("utf-8")
             raise RuntimeError(message)
 
     return wrapper
@@ -189,9 +188,7 @@ class JetrawTiff:
 
     @dp_status_as_exception
     def _read_page_buffer(self, bufptr, pageidx):
-        return _jetraw_tiff_lib.jetraw_tiff_read_page(
-            self._handle, bufptr, pageidx
-        )
+        return _jetraw_tiff_lib.jetraw_tiff_read_page(self._handle, bufptr, pageidx)
 
     def read_page(self, pageidx):
         """Read a page from the TIFF"""

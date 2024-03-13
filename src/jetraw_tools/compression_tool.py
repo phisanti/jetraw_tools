@@ -7,6 +7,7 @@ from .utils import prepare_images, add_extension, create_compress_folder
 from .tiff_writer import imwrite, metadata_writer
 from .image_reader import ImageReader
 
+
 class CompressionTool:
     """
     A tool for compressing and decompressing images using the JetRaw algorithm.
@@ -19,12 +20,12 @@ class CompressionTool:
     :type verbose: bool, optional
     """
 
-
-    def __init__(self, calibration_file: str = None, identifier: str = "", verbose: bool = False):
+    def __init__(
+        self, calibration_file: str = None, identifier: str = "", verbose: bool = False
+    ):
         self.calibration_file = calibration_file
         self.identifier = identifier
         self.verbose = verbose
-    
 
     def list_files(self, folder_path: str, image_extension: str) -> list:
         """
@@ -34,18 +35,26 @@ class CompressionTool:
         :param image_extension: The image file extension.
         :return: A list of image files.
         """
-        
+
         if os.path.isfile(folder_path) and folder_path.endswith(image_extension):
             image_files = [folder_path]
         else:
-            image_files = [f for f in os.listdir(folder_path) if f.endswith(image_extension)]
+            image_files = [
+                f for f in os.listdir(folder_path) if f.endswith(image_extension)
+            ]
         if len(image_files) == 0:
             print(f"No file found in the folder with extension {image_extension}")
-        
+
         return image_files
 
-
-    def compress_image(self, img_map: np.ndarray, target_file: str, metadata: dict, ome_bool: bool = True, metadata_json: bool = True) -> bool:
+    def compress_image(
+        self,
+        img_map: np.ndarray,
+        target_file: str,
+        metadata: dict,
+        ome_bool: bool = True,
+        metadata_json: bool = True,
+    ) -> bool:
         """
         Compress an image.
 
@@ -70,12 +79,24 @@ class CompressionTool:
                 imageJ_metadata = True
             else:
                 imageJ_metadata = False
-            metadata_writer(target_file, metadata=metadata, ome_bool=ome_bool, imagej=imageJ_metadata, as_json=metadata_json)
+            metadata_writer(
+                target_file,
+                metadata=metadata,
+                ome_bool=ome_bool,
+                imagej=imageJ_metadata,
+                as_json=metadata_json,
+            )
 
         return True
 
-
-    def decompress_image(self, img_map: np.ndarray, target_file: str, metadata: dict, ome_bool: bool = True, metadata_json: bool = False) -> bool:
+    def decompress_image(
+        self,
+        img_map: np.ndarray,
+        target_file: str,
+        metadata: dict,
+        ome_bool: bool = True,
+        metadata_json: bool = False,
+    ) -> bool:
         """
         Decompress an image.
 
@@ -88,17 +109,22 @@ class CompressionTool:
         """
 
         with tifffile.TiffWriter(target_file) as tif:
-            tif.write(img_map)     
+            tif.write(img_map)
         if metadata:
             if not ome_bool:
-                imageJ_metadata = True            
+                imageJ_metadata = True
             else:
                 imageJ_metadata = False
 
-            metadata_writer(target_file, metadata=metadata, ome_bool=ome_bool, imagej=imageJ_metadata, as_json=metadata_json)
-        
-        return True
+            metadata_writer(
+                target_file,
+                metadata=metadata,
+                ome_bool=ome_bool,
+                imagej=imageJ_metadata,
+                as_json=metadata_json,
+            )
 
+        return True
 
     def remove_files(self, output_tiff_filename: str, input_filename: str) -> None:
         """
@@ -115,15 +141,16 @@ class CompressionTool:
             if compressed_size > 0.05 * original_size:
                 os.remove(input_filename)
 
-
-    def process_folder(self, 
-                       folder_path: str, 
-                       mode: str = "compress", 
-                       image_extension: str = ".tiff", 
-                       process_metadata: bool = True, 
-                       ome_bool: bool = True, 
-                       metadata_json: bool = True, 
-                       remove_source: bool = False) -> None:
+    def process_folder(
+        self,
+        folder_path: str,
+        mode: str = "compress",
+        image_extension: str = ".tiff",
+        process_metadata: bool = True,
+        ome_bool: bool = True,
+        metadata_json: bool = True,
+        remove_source: bool = False,
+    ) -> None:
         """
         Process a folder of images.
 
@@ -140,38 +167,53 @@ class CompressionTool:
         if mode == "decompress":
             suffix = "_decompressed"
         else:
-            suffix = "_compressed"    
-        output_folder=create_compress_folder(folder_path, suffix=suffix)
+            suffix = "_compressed"
+        output_folder = create_compress_folder(folder_path, suffix=suffix)
         image_files = self.list_files(folder_path, image_extension)
 
         # Iterate over images
         for image_file in image_files:
-
             if self.verbose:
                 print(f"Processing {image_file}...")
-                
+
             # Input/output files
             input_filename = os.path.join(folder_path, image_file)
             output_filename = os.path.join(output_folder, image_file)
             if not ome_bool and process_metadata:
                 print("Metadata not allowed for *.p.tif files yet, omiting metadata...")
-                process_metadata=False
+                process_metadata = False
 
-            output_filename=add_extension(output_filename, image_extension, mode=mode, ome=ome_bool)
+            output_filename = add_extension(
+                output_filename, image_extension, mode=mode, ome=ome_bool
+            )
 
             # Read image and metadata
             image_reader = ImageReader(input_filename, image_extension)
             img_map, metadata = image_reader.read_image()
 
             if process_metadata is False:
-                metadata={}
-            
+                metadata = {}
+
             if mode == "compress":
-                self.compress_image(img_map, output_filename, metadata, ome_bool=ome_bool, metadata_json=metadata_json)
+                self.compress_image(
+                    img_map,
+                    output_filename,
+                    metadata,
+                    ome_bool=ome_bool,
+                    metadata_json=metadata_json,
+                )
             elif mode == "decompress":
-                self.decompress_image(img_map, output_filename, metadata, ome_bool=ome_bool, metadata_json=False)
+                self.decompress_image(
+                    img_map,
+                    output_filename,
+                    metadata,
+                    ome_bool=ome_bool,
+                    metadata_json=False,
+                )
             else:
-                raise ValueError(f"Mode {mode} is not supported. Please use 'compress' or 'decompress'.")
+                raise ValueError(
+                    f"Mode {mode} is not supported. Please use 'compress' or 'decompress'."
+                )
 
             if remove_source:
                 self.remove_files(output_filename, input_filename)

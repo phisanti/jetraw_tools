@@ -19,7 +19,7 @@ import locale
 #   std::runtime_error: collate_byname<char>::collate_byname failed
 #   to construct for C/en_US.UTF-8/C/C/C/C
 
-#import locale
+# import locale
 
 locale.setlocale(locale.LC_ALL, locale.getlocale())
 
@@ -27,16 +27,16 @@ locale.setlocale(locale.LC_ALL, locale.getlocale())
 def encode_raw(image):
     """Encode input 2D numpy array image (uint16 pixel type) using JetRaw compression.
 
-        Parameters
-        ----------
-        image : 2D numpy array
-            Input image with pixel type uint16. Already dpcore prepared.
+    Parameters
+    ----------
+    image : 2D numpy array
+        Input image with pixel type uint16. Already dpcore prepared.
 
-        Returns
-        -------
-        Encoded 1D buffer (int8 type).
+    Returns
+    -------
+    Encoded 1D buffer (int8 type).
 
-        """
+    """
     if image.dtype != np.uint16:
         raise ValueError("Image must be of dtype 'uint16'")
     if image.ndim != 2:
@@ -52,24 +52,24 @@ def encode_raw(image):
         ctypes.byref(output_size),
     )
 
-    return output[:output_size.value]
+    return output[: output_size.value]
 
 
 def encode(image):
     """Encode input 2D numpy array image using JetRaw compression.
-        The encoded output 1D buffer stores the original shape of the input image in
-        the first 8 bytes of the buffer (4 bytes width - 4 bytes height)
+    The encoded output 1D buffer stores the original shape of the input image in
+    the first 8 bytes of the buffer (4 bytes width - 4 bytes height)
 
-        Parameters
-        ----------
-        image : 2D numpy array
-            Input image with pixel type uint16. Already dpcore prepared.
+    Parameters
+    ----------
+    image : 2D numpy array
+        Input image with pixel type uint16. Already dpcore prepared.
 
-        Returns
-        -------
-        Encoded 1D buffer with type int8. Original image shape is stored at the beginning of buffer.
+    Returns
+    -------
+    Encoded 1D buffer with type int8. Original image shape is stored at the beginning of buffer.
 
-        """
+    """
     encoded = encode_raw(image)
     shape = np.array(image.shape, dtype=np.uint32)
     return np.r_[shape.view(dtype="b"), encoded]
@@ -78,18 +78,18 @@ def encode(image):
 def decode_raw(raw_encoded_image, output):
     """Decode input raw_encoded_image and result is stored in output parameter.
 
-        Parameters
-        ----------
-        raw_encoded_image : 1D numpy array
-            Jetraw encoded input buffer with int8 type.
-        output : 2D numpy array
-            Container for decoded image with original image shape and pixel type uint16.
+    Parameters
+    ----------
+    raw_encoded_image : 1D numpy array
+        Jetraw encoded input buffer with int8 type.
+    output : 2D numpy array
+        Container for decoded image with original image shape and pixel type uint16.
 
-        Returns
-        -------
-        None
+    Returns
+    -------
+    None
 
-        """
+    """
     if raw_encoded_image.dtype != np.dtype("b"):
         raise ValueError("Encoded image must be of dtype 'b' / 'int8'")
     if raw_encoded_image.ndim != 1:
@@ -99,23 +99,23 @@ def decode_raw(raw_encoded_image, output):
         raw_encoded_image.ctypes.data_as(ctypes.c_char_p),
         raw_encoded_image.size,
         output.ctypes.data_as(ctypes.POINTER(ctypes.c_uint16)),
-        output.size
+        output.size,
     )
 
 
 def decode(encoded_image):
     """Decode input encoded_image and decoded 2D image is returned.
 
-        Parameters
-        ----------
-        encoded_image : 1D numpy array
-            Jetraw encoded input buffer with int8 type.
+    Parameters
+    ----------
+    encoded_image : 1D numpy array
+        Jetraw encoded input buffer with int8 type.
 
-        Returns
-        -------
-        2D numpy array containing decoded image with pixel type uint16.
+    Returns
+    -------
+    2D numpy array containing decoded image with pixel type uint16.
 
-        """
+    """
     shape = encoded_image[:8].view(dtype=np.uint32)
     output = np.empty(shape, dtype=np.uint16)
     decode_raw(encoded_image[8:], output)

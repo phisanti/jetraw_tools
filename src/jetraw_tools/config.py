@@ -13,14 +13,16 @@ def configjrt():
     config_folder = os.path.expanduser("~/.config/jetraw_tools")
     if not os.path.exists(config_folder):
         os.makedirs(config_folder)
-    
+
     # Config calibration.dat file
     cal_files = glob.glob(os.path.join(config_folder, "*.dat"))
     if cal_files:
         print("There is a calibration.dat file in the config folder:")
         dat_name = os.path.basename(cal_files[0])
         print(dat_name)
-        overwrite = input("\nDo you want to overwrite the existing calibration.dat file? (yes/no): ")
+        overwrite = input(
+            "\nDo you want to overwrite the existing calibration.dat file? (yes/no): "
+        )
         if overwrite.lower() == "yes":
             copy_calibration_file(config_folder)
 
@@ -35,13 +37,12 @@ def configjrt():
     else:
         print("There are no *.dat files in the config folder.")
         copy_calibration_file(config_folder)
-    
+
     # Config image identifiers
     config_identifiers(config_folder)
 
 
-def config_identifiers(config_folder : str) -> None:
-
+def config_identifiers(config_folder: str) -> None:
     """
     Configure identifiers in the configuration file.
 
@@ -52,44 +53,46 @@ def config_identifiers(config_folder : str) -> None:
     :param config_folder: The path to the folder containing the configuration file.
     :type config_folder: str
     """
-        
+
     config_file = os.path.join(config_folder, "jetraw_tools.cfg")
     config = configparser.ConfigParser()
     config.read(config_file)
 
     # Show identifiers
-    if 'identifiers' in config and config['identifiers']:
-        
+    if "identifiers" in config and config["identifiers"]:
         # Read existing config
         print("Existing identifiers:")
-        for id in config['identifiers']:
-            print(id, ":", config['identifiers'][id])
-        
+        for id in config["identifiers"]:
+            print(id, ":", config["identifiers"][id])
+
         remove_all = input("Do you want to remove all identifiers? (yes/no): ")
-        if remove_all.lower() == 'yes':
-            config.remove_section('identifiers')
-            config['identifiers'] = {}
-            with open(config_file, 'w') as f:
+        if remove_all.lower() == "yes":
+            config.remove_section("identifiers")
+            config["identifiers"] = {}
+            with open(config_file, "w") as f:
                 config.write(f)
             print("All identifiers have been removed.")
 
     # Config identifiers
     id_counter = 1
     while True:
-        identifier = input(f"Enter identifier {id_counter} (or press Enter to finish): ")
-        if identifier == '':
+        identifier = input(
+            f"Enter identifier {id_counter} (or press Enter to finish): "
+        )
+        if identifier == "":
             break
-        if 'identifiers' not in config:
-            config.add_section('identifiers')
-        config['identifiers'][f'id{id_counter}'] = identifier
+        if "identifiers" not in config:
+            config.add_section("identifiers")
+        config["identifiers"][f"id{id_counter}"] = identifier
         id_counter += 1
 
-    with open(config_file, 'w') as f:
-        config.write(f)  
+    with open(config_file, "w") as f:
+        config.write(f)
 
-def copy_calibration_file(config_folder : str) -> None:
+
+def copy_calibration_file(config_folder: str) -> None:
     """Copy calibration file
-    Interactively copies a '.dat' calibration file to a configuration 
+    Interactively copies a '.dat' calibration file to a configuration
     folder and updates the configuration file.
 
     :param config_folder: Path to the configuration folder.
@@ -97,14 +100,15 @@ def copy_calibration_file(config_folder : str) -> None:
     """
 
     while True:
-    
-        calibration_file = input("Enter the path to the calibration file (or 'enter' to quit): ")
-        
-        if calibration_file.lower() == 'exit' or calibration_file == '':
+        calibration_file = input(
+            "Enter the path to the calibration file (or 'enter' to quit): "
+        )
+
+        if calibration_file.lower() == "exit" or calibration_file == "":
             print("No identifier entered, exiting...")
             return
 
-        elif not calibration_file.endswith('.dat'):
+        elif not calibration_file.endswith(".dat"):
             print("File must be a .dat file")
 
         else:
@@ -118,8 +122,8 @@ def copy_calibration_file(config_folder : str) -> None:
                 config = configparser.ConfigParser()
                 if os.path.exists(config_file):
                     config.read(config_file)
-                config['calibration_file'] = {'calibration_file': new_calibration}
-                with open(config_file, 'w') as f:
+                config["calibration_file"] = {"calibration_file": new_calibration}
+                with open(config_file, "w") as f:
                     config.write(f)
 
                 break
