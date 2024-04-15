@@ -75,7 +75,7 @@ class ImageReader:
 
         return img_map, metadata
 
-    def ead_tif_image(self) -> Tuple[np.ndarray, Dict[str, Any]]:
+    def read_tif_image(self) -> Tuple[np.ndarray, Dict[str, Any]]:
         with tifffile.TiffFile(self.input_filename) as tif:
             img_map = tif.asarray()
             metadata = tif.imagej_metadata
