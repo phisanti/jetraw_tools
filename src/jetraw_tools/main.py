@@ -9,7 +9,6 @@ from jetraw_tools.config import configjrt
 
 
 def main():
-
     # Pase and set locale
     args = parser.parse_args()
     locale.setlocale(locale.LC_ALL, locale.getlocale())
@@ -37,7 +36,7 @@ def main():
 
     if args.key == "":
         licence_key = config["licence_key"]["key"]
-    jetraw_tiff._jetraw_tiff_lib.jetraw_tiff_set_license(licence_key.encode('utf-8'))
+    jetraw_tiff._jetraw_tiff_lib.jetraw_tiff_set_license(licence_key.encode("utf-8"))
 
     if args.verbose:
         print(
@@ -59,7 +58,7 @@ def main():
         full_path = os.path.join(os.getcwd(), args.decompress)
         mode = "decompress"
         process_json = False
-    
+
     if args.decompress or args.decompress:
         compressor = CompressionTool(cal_file, identifier, args.verbose)
         compressor.process_folder(

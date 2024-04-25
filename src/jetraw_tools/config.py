@@ -35,7 +35,7 @@ def configjrt():
             pass
     else:
         print("There are no *.dat files in the config folder.")
-        
+
         copy_calibration_file(config_folder)
         # Config image identifiers
         config_identifiers(config_folder)
@@ -45,7 +45,6 @@ def configjrt():
 
 
 def add_licence_key(config_folder):
-
     """Adds the licence key to the configuration file.
     :param config_folder: The path to the folder containing the configuration file.
     :type config_folder: str
@@ -63,7 +62,7 @@ def add_licence_key(config_folder):
     if current_key:
         print(f"Current licence key: {current_key}")
         overwrite = input("Do you want to overwrite the current key? (y/n): ")
-        if overwrite.lower() != 'y':
+        if overwrite.lower() != "y":
             print("Licence key not updated.")
             return
     else:
@@ -76,6 +75,7 @@ def add_licence_key(config_folder):
         config.write(f)
 
     print("Licence key updated successfully.")
+
 
 def config_identifiers(config_folder: str) -> None:
     """
@@ -107,7 +107,7 @@ def config_identifiers(config_folder: str) -> None:
             with open(config_file, "w") as f:
                 config.write(f)
             print("All identifiers have been removed.")
-        
+
         elif remove_all.lower() == "no" or remove_all == "":
             print("No identifiers will be removed.")
             return
@@ -120,7 +120,7 @@ def config_identifiers(config_folder: str) -> None:
         )
         if identifier == "":
             break
-        
+
         if identifier.lower() == "no":
             print("No identifiers will be added.")
             return

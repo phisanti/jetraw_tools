@@ -46,9 +46,7 @@ parser.add_argument(
 parser.add_argument(
     "--remove", action="store_true", default=False, help="Delete original images"
 )
-parser.add_argument(
-    "-k", "--key", type=str, default="", help="Licence key"
-)
+parser.add_argument("-k", "--key", type=str, default="", help="Licence key")
 parser.add_argument(
     "--verbose", action="store_true", default=True, help="Prints verbose output"
 )
