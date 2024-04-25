@@ -9,6 +9,7 @@ from .utils import prepare_images, add_extension, create_compress_folder
 from .tiff_writer import imwrite, metadata_writer
 from .image_reader import ImageReader
 
+
 class CompressionTool:
     """
     A tool for compressing and decompressing images using the JetRaw algorithm.
@@ -142,19 +143,18 @@ class CompressionTool:
 
         return True
 
-
     def process_image(
-                self,
-                folder_path,
-                output_folder,
-                image_file,
-                mode,
-                image_extension,
-                process_metadata,
-                ome_bool,
-                metadata_json,
-                remove_source
-                ) -> None:
+        self,
+        folder_path: str,
+        output_folder: str,
+        image_file: str,
+        mode: str,
+        image_extension: str,
+        process_metadata: bool,
+        ome_bool: bool,
+        metadata_json: bool,
+        remove_source: bool,
+    ) -> int:
         """
         Process an image file.
 
@@ -184,7 +184,7 @@ class CompressionTool:
             output_filename, image_extension, mode=mode, ome=ome_bool
         )
 
-        failed_files = 0 
+        failed_files = 0
         try:
             # Read image and metadata
             image_reader = ImageReader(input_filename, image_extension)
@@ -219,7 +219,7 @@ class CompressionTool:
         except Exception as e:
             failed_files += 1
             print(f"Error processing {image_file}: {e}")
-        
+
         return failed_files
 
     def process_folder(
@@ -231,7 +231,7 @@ class CompressionTool:
         ome_bool: bool = True,
         metadata_json: bool = True,
         remove_source: bool = False,
-    ) -> None:
+    ) -> bool:
         """
         Process a folder of images.
 
@@ -287,6 +287,8 @@ class CompressionTool:
             print(f"Processed {len(image_files)} images")
             failed = sum(results)
             sucess_files = len(image_files) - failed
-            print(f"{sucess_files} files processed correctly and {failed} images failed to process")
-        
+            print(
+                f"{sucess_files} files processed correctly and {failed} images failed to process"
+            )
+
         return True
