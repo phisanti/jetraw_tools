@@ -171,9 +171,17 @@ def metadata_writer(
             json.dump(metadata_dump, f, indent=3, ensure_ascii=False)
 
     if ome_bool:
-        tifffile.tiffcomment(
-            output_tiff_filename, metadata.to_xml().encode("ascii", "ignore")
-        )
+        if isinstance(metadata, ome_types.OME):
+            tifffile.tiffcomment(
+                output_tiff_filename, metadata.to_xml().encode("ascii", "ignore")
+            )
+        else:
+            metadata = convert_to_ascii(metadata)
+            metadata_str = json.dumps(serialise(metadata))
+
+            tifffile.tiffcomment(
+                output_tiff_filename, metadata_str
+            )
 
     if imagej:
         if isinstance(metadata, ome_types.OME):
