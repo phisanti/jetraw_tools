@@ -38,11 +38,6 @@ def main():
         licence_key = config["licence_key"]["key"]
     jetraw_tiff._jetraw_tiff_lib.jetraw_tiff_set_license(licence_key.encode("utf-8"))
 
-    if args.verbose:
-        print(
-            f"Using calibration file: {os.path.basename(cal_file)} and identifier: {identifier}"
-        )
-
     if identifier == "" or cal_file == "":
         raise ValueError(
             "Identifier and calibration file must be set. Use --config to set them or provide them as arguments."
@@ -59,7 +54,12 @@ def main():
         mode = "decompress"
         process_json = False
 
-    if args.decompress or args.decompress:
+    if args.compress or args.decompress:
+        if args.verbose:
+            print(
+                f"Using calibration file: {os.path.basename(cal_file)} and identifier: {identifier}"
+            )
+
         compressor = CompressionTool(cal_file, identifier, args.verbose)
         compressor.process_folder(
             full_path,

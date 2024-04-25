@@ -5,7 +5,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="jetraw_tools",
-    version="0.3.2",
+    version="0.3.5",
     python_requires=">3.8",
     packages=find_packages(where="src"),
     package_dir={"": "src"},

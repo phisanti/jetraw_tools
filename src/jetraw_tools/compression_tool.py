@@ -3,10 +3,11 @@ import numpy as np
 import tifffile
 import dpcore
 import locale
+import multiprocessing
+from functools import partial
 from .utils import prepare_images, add_extension, create_compress_folder
 from .tiff_writer import imwrite, metadata_writer
 from .image_reader import ImageReader
-
 
 class CompressionTool:
     """
@@ -46,6 +47,21 @@ class CompressionTool:
             print(f"No file found in the folder with extension {image_extension}")
 
         return image_files
+
+    def remove_files(self, output_tiff_filename: str, input_filename: str) -> None:
+        """
+        Remove files if the new file exists and its size is > 5% of the original.
+
+        :param output_tiff_filename: The output TIFF filename.
+        :param input_filename: The input filename.
+        """
+
+        # Verify that the new file exist with size > 5%original before removal
+        if os.path.exists(output_tiff_filename):
+            original_size = os.path.getsize(input_filename)
+            compressed_size = os.path.getsize(output_tiff_filename)
+            if compressed_size > 0.05 * original_size:
+                os.remove(input_filename)
 
     def compress_image(
         self,
@@ -126,20 +142,64 @@ class CompressionTool:
 
         return True
 
-    def remove_files(self, output_tiff_filename: str, input_filename: str) -> None:
-        """
-        Remove files if the new file exists and its size is > 5% of the original.
 
-        :param output_tiff_filename: The output TIFF filename.
-        :param input_filename: The input filename.
-        """
+    def process_image(
+                self,
+                folder_path,
+                output_folder,
+                image_file,
+                mode,
+                image_extension,
+                process_metadata,
+                ome_bool,
+                metadata_json,
+                remove_source
+                ) -> None:
+        if self.verbose:
+            print(f"Processing {image_file}...")
 
-        # Verify that the new file exist with size > 5%original before removal
-        if os.path.exists(output_tiff_filename):
-            original_size = os.path.getsize(input_filename)
-            compressed_size = os.path.getsize(output_tiff_filename)
-            if compressed_size > 0.05 * original_size:
-                os.remove(input_filename)
+        # Input/output files
+        input_filename = os.path.join(folder_path, image_file)
+        output_filename = os.path.join(output_folder, image_file)
+        if not ome_bool and process_metadata:
+            print("Metadata not allowed for *.p.tif files yet, omiting metadata...")
+            process_metadata = False
+
+        output_filename = add_extension(
+            output_filename, image_extension, mode=mode, ome=ome_bool
+        )
+
+        # Read image and metadata
+        image_reader = ImageReader(input_filename, image_extension)
+        img_map, metadata = image_reader.read_image()
+
+        if process_metadata is False:
+            metadata = {}
+
+        if mode == "compress":
+            self.compress_image(
+                img_map,
+                output_filename,
+                metadata,
+                ome_bool=ome_bool,
+                metadata_json=metadata_json,
+            )
+        elif mode == "decompress":
+            self.decompress_image(
+                img_map,
+                output_filename,
+                metadata,
+                ome_bool=ome_bool,
+                metadata_json=False,
+            )
+        else:
+            raise ValueError(
+                f"Mode {mode} is not supported. Please use 'compress' or 'decompress'."
+            )
+
+        if remove_source:
+            self.remove_files(output_filename, input_filename)
+
 
     def process_folder(
         self,
@@ -168,54 +228,38 @@ class CompressionTool:
             suffix = "_decompressed"
         else:
             suffix = "_compressed"
-        output_folder = create_compress_folder(folder_path, suffix=suffix)
+        if os.path.isdir(folder_path):
+            output_folder = create_compress_folder(folder_path, suffix=suffix)
+        else:
+            output_folder = folder_path
+
         image_files = self.list_files(folder_path, image_extension)
 
-        # Iterate over images
-        for image_file in image_files:
-            if self.verbose:
-                print(f"Processing {image_file}...")
+        # Create a pool of worker processes
+        num_processes = multiprocessing.cpu_count()
+        pool = multiprocessing.Pool(processes=num_processes)
 
-            # Input/output files
-            input_filename = os.path.join(folder_path, image_file)
-            output_filename = os.path.join(output_folder, image_file)
-            if not ome_bool and process_metadata:
-                print("Metadata not allowed for *.p.tif files yet, omiting metadata...")
-                process_metadata = False
-
-            output_filename = add_extension(
-                output_filename, image_extension, mode=mode, ome=ome_bool
+        # Prepare arguments for the worker function
+        worker_args = [
+            (
+                folder_path,
+                output_folder,
+                image_file,
+                mode,
+                image_extension,
+                process_metadata,
+                ome_bool,
+                metadata_json,
+                remove_source,
             )
+            for image_file in image_files
+        ]
 
-            # Read image and metadata
-            image_reader = ImageReader(input_filename, image_extension)
-            img_map, metadata = image_reader.read_image()
+        # Run the worker function in parallel
+        pool.starmap(self.process_image, worker_args)
 
-            if process_metadata is False:
-                metadata = {}
-
-            if mode == "compress":
-                self.compress_image(
-                    img_map,
-                    output_filename,
-                    metadata,
-                    ome_bool=ome_bool,
-                    metadata_json=metadata_json,
-                )
-            elif mode == "decompress":
-                self.decompress_image(
-                    img_map,
-                    output_filename,
-                    metadata,
-                    ome_bool=ome_bool,
-                    metadata_json=False,
-                )
-            else:
-                raise ValueError(
-                    f"Mode {mode} is not supported. Please use 'compress' or 'decompress'."
-                )
-
-            if remove_source:
-                self.remove_files(output_filename, input_filename)
+        # Close the pool and wait for all tasks to complete
+        pool.close()
+        pool.join()
 
         return True
