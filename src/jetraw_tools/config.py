@@ -31,16 +31,51 @@ def configjrt():
         elif overwrite.lower() == "no":
             print("The existing calibration.dat file will be used.")
             config_identifiers(config_folder)
-            return
         elif overwrite.lower() == "":
-            return
+            pass
     else:
         print("There are no *.dat files in the config folder.")
+        
         copy_calibration_file(config_folder)
+        # Config image identifiers
+        config_identifiers(config_folder)
 
-    # Config image identifiers
-    config_identifiers(config_folder)
+    # Add licence key
+    add_licence_key(config_folder)
 
+
+def add_licence_key(config_folder):
+
+    """Adds the licence key to the configuration file.
+    :param config_folder: The path to the folder containing the configuration file.
+    :type config_folder: str
+    """
+
+    config_file = os.path.join(config_folder, "jetraw_tools.cfg")
+    config = configparser.ConfigParser()
+    config.read(config_file)
+
+    if not config.has_section("licence_key"):
+        config.add_section("licence_key")
+
+    current_key = config.get("licence_key", "key", fallback=None)
+
+    if current_key:
+        print(f"Current licence key: {current_key}")
+        overwrite = input("Do you want to overwrite the current key? (y/n): ")
+        if overwrite.lower() != 'y':
+            print("Licence key not updated.")
+            return
+    else:
+        print("No licence key found.")
+
+    new_key = input("Enter the new licence key: ")
+    config["licence_key"]["key"] = new_key
+
+    with open(config_file, "w") as f:
+        config.write(f)
+
+    print("Licence key updated successfully.")
 
 def config_identifiers(config_folder: str) -> None:
     """
@@ -72,6 +107,10 @@ def config_identifiers(config_folder: str) -> None:
             with open(config_file, "w") as f:
                 config.write(f)
             print("All identifiers have been removed.")
+        
+        elif remove_all.lower() == "no" or remove_all == "":
+            print("No identifiers will be removed.")
+            return
 
     # Config identifiers
     id_counter = 1
@@ -81,6 +120,11 @@ def config_identifiers(config_folder: str) -> None:
         )
         if identifier == "":
             break
+        
+        if identifier.lower() == "no":
+            print("No identifiers will be added.")
+            return
+
         if "identifiers" not in config:
             config.add_section("identifiers")
         config["identifiers"][f"id{id_counter}"] = identifier
