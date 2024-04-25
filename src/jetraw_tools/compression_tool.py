@@ -155,6 +155,21 @@ class CompressionTool:
                 metadata_json,
                 remove_source
                 ) -> None:
+        """
+        Process an image file.
+
+        :param folder_path: The path to the folder containing the image.
+        :param output_folder: The path to the folder where the processed image will be saved.
+        :param image_file: The name of the image file to process.
+        :param mode: The mode, either "compress" or "decompress".
+        :param image_extension: The image file extension.
+        :param process_metadata: Whether to process metadata.
+        :param ome_bool: Whether to use OME metadata.
+        :param metadata_json: Whether to write metadata as JSON.
+        :param remove_source: Whether to remove the source files after processing.
+        :return: None
+        """
+
         if self.verbose:
             print(f"Processing {image_file}...")
 
@@ -169,37 +184,43 @@ class CompressionTool:
             output_filename, image_extension, mode=mode, ome=ome_bool
         )
 
-        # Read image and metadata
-        image_reader = ImageReader(input_filename, image_extension)
-        img_map, metadata = image_reader.read_image()
+        failed_files = 0 
+        try:
+            # Read image and metadata
+            image_reader = ImageReader(input_filename, image_extension)
+            img_map, metadata = image_reader.read_image()
 
-        if process_metadata is False:
-            metadata = {}
+            if process_metadata is False:
+                metadata = {}
 
-        if mode == "compress":
-            self.compress_image(
-                img_map,
-                output_filename,
-                metadata,
-                ome_bool=ome_bool,
-                metadata_json=metadata_json,
-            )
-        elif mode == "decompress":
-            self.decompress_image(
-                img_map,
-                output_filename,
-                metadata,
-                ome_bool=ome_bool,
-                metadata_json=False,
-            )
-        else:
-            raise ValueError(
-                f"Mode {mode} is not supported. Please use 'compress' or 'decompress'."
-            )
+            if mode == "compress":
+                self.compress_image(
+                    img_map,
+                    output_filename,
+                    metadata,
+                    ome_bool=ome_bool,
+                    metadata_json=metadata_json,
+                )
+            elif mode == "decompress":
+                self.decompress_image(
+                    img_map,
+                    output_filename,
+                    metadata,
+                    ome_bool=ome_bool,
+                    metadata_json=False,
+                )
+            else:
+                raise ValueError(
+                    f"Mode {mode} is not supported. Please use 'compress' or 'decompress'."
+                )
 
-        if remove_source:
-            self.remove_files(output_filename, input_filename)
-
+            if remove_source:
+                self.remove_files(output_filename, input_filename)
+        except Exception as e:
+            failed_files += 1
+            print(f"Error processing {image_file}: {e}")
+        
+        return failed_files
 
     def process_folder(
         self,
@@ -256,10 +277,16 @@ class CompressionTool:
         ]
 
         # Run the worker function in parallel
-        pool.starmap(self.process_image, worker_args)
+        results = pool.starmap(self.process_image, worker_args)
 
         # Close the pool and wait for all tasks to complete
         pool.close()
         pool.join()
 
+        if self.verbose:
+            print(f"Processed {len(image_files)} images")
+            failed = sum(results)
+            sucess_files = len(image_files) - failed
+            print(f"{sucess_files} files processed correctly and {failed} images failed to process")
+        
         return True
