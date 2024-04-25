@@ -32,6 +32,7 @@ This command will:
 - Create the ~/.config/jetraw_tools folder if it doesn't exist
 - Copy a calibration .dat
 - Store a list of identifiers
+- Add licence key
 
 Then, default calibration .dat file and identifier don't need to be specified each time. Therefore, you can run:
 
@@ -51,6 +52,7 @@ jetraw_tools -d "sample_images/" --extension ".ome.p.tiff"
 - --extension: Input image file extension (default .tif)
 - --metadata: Process metadata (default True)
 - --json: Save metadata as JSON (default True)
+- --key: Pass licecne key to JetRaw (default None)
 - --remove: Delete original images after compression (default False)
 
 The compressed JetRaw files will be saved in a jetraw_compressed folder alongside the original images.
