@@ -111,7 +111,9 @@ def dict2ome(metadata: dict) -> MapAnnotation:
     """Converts metadata dictionary to OME MapAnnotation"""
 
     map_annotation = MapAnnotation(
-        value=Map(ms=[M(k=_key, value=str(_value)) for _key, _value in metadata.items()])
+        value=Map(
+            ms=[M(k=_key, value=str(_value)) for _key, _value in metadata.items()]
+        )
     )
 
     return map_annotation
