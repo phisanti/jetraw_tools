@@ -24,8 +24,11 @@ import locale
 try:
     locale.setlocale(locale.LC_ALL, locale.getlocale())
 except locale.Error:
-    print("Warning: The system's default locale is unsupported. Falling back to the default 'C' locale.")
-    locale.setlocale(locale.LC_ALL, 'C')  # Fallback to the default 'C' locale
+    print(
+        "Warning: The system's default locale is unsupported. Falling back to the default 'C' locale."
+    )
+    locale.setlocale(locale.LC_ALL, "C")  # Fallback to the default 'C' locale
+
 
 def encode_raw(image):
     """Encode input 2D numpy array image (uint16 pixel type) using JetRaw compression.

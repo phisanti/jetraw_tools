@@ -11,8 +11,8 @@ from jetraw_tools.config import configjrt
 def main():
     # Pase and set locale
     args = parser.parse_args()
-    #locale.setlocale(locale.LC_ALL, locale.getlocale())
-    #locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+    # locale.setlocale(locale.LC_ALL, locale.getlocale())
+    # locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
 
     # Set default calibration file path
     if args.settings:

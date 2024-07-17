@@ -160,13 +160,21 @@ def metadata_writer(
     """
 
     if as_json:
-        json_filename = output_tiff_filename.replace(".ome.p.tiff" if isinstance(metadata, ome_types.OME) else ".p.tiff", ".json")
-        
+        json_filename = output_tiff_filename.replace(
+            ".ome.p.tiff" if isinstance(metadata, ome_types.OME) else ".p.tiff", ".json"
+        )
+
         try:
-            metadata_dump = json.loads(metadata.json()) if isinstance(metadata, ome_types.OME) else metadata
+            metadata_dump = (
+                json.loads(metadata.json())
+                if isinstance(metadata, ome_types.OME)
+                else metadata
+            )
         except Exception:
-            metadata_dump = convert_to_ascii(metadata.dict() if isinstance(metadata, ome_types.OME) else metadata)
-        
+            metadata_dump = convert_to_ascii(
+                metadata.dict() if isinstance(metadata, ome_types.OME) else metadata
+            )
+
         with open(json_filename, "w", encoding="utf-8") as f:
             json.dump(metadata_dump, f, indent=3, ensure_ascii=False, default=serialise)
 
