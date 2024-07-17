@@ -37,6 +37,13 @@ parser.add_argument(
     choices=valid_extensions,
     help="Image file extension",
 )
+
+parser.add_argument(
+    "--ncores",
+    type=int,
+    default=0,
+    help="Number of cores to use, by default 0 (all available cores)",
+)
 parser.add_argument(
     "--metadata", action="store_true", default=True, help="Process metadata"
 )

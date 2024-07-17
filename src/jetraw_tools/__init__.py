@@ -21,7 +21,7 @@ import locale
 
 # import locale
 
-locale.setlocale(locale.LC_ALL, locale.getlocale())
+# locale.setlocale(locale.LC_ALL, locale.getlocale())
 
 
 def encode_raw(image):

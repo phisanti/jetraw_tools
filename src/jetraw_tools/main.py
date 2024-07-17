@@ -11,7 +11,8 @@ from jetraw_tools.config import configjrt
 def main():
     # Pase and set locale
     args = parser.parse_args()
-    locale.setlocale(locale.LC_ALL, locale.getlocale())
+    # locale.setlocale(locale.LC_ALL, locale.getlocale())
+    locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
 
     # Set default calibration file path
     if args.settings:
@@ -60,7 +61,7 @@ def main():
                 f"Using calibration file: {os.path.basename(cal_file)} and identifier: {identifier}"
             )
 
-        compressor = CompressionTool(cal_file, identifier, args.verbose)
+        compressor = CompressionTool(cal_file, identifier, args.ncores, args.verbose)
         compressor.process_folder(
             full_path,
             mode,

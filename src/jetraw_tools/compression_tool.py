@@ -20,13 +20,30 @@ class CompressionTool:
     :type identifier: str, optional
     :param verbose: Whether to print verbose output.
     :type verbose: bool, optional
+    :param extension: Image file extension.
+    :type extension: str, optional
+    :param metadata: Whether to process metadata.
+    :type metadata: bool, optional
+    :param json: Whether to save metadata as JSON.
+    :type json: bool, optional
+    :param remove: Whether to delete original images.
+    :type remove: bool, optional
+    :param key: Licence key.
+    :type key: str, optional
+    :param ncores: Number of cores to use.
+    :type ncores: int, optional
     """
 
     def __init__(
-        self, calibration_file: str = None, identifier: str = "", verbose: bool = False
+        self,
+        calibration_file: str = None,
+        identifier: str = "",
+        ncores=0,
+        verbose: bool = False,
     ):
         self.calibration_file = calibration_file
         self.identifier = identifier
+        self.ncores = ncores
         self.verbose = verbose
 
     def list_files(self, folder_path: str, image_extension: str) -> list:
@@ -257,8 +274,11 @@ class CompressionTool:
         image_files = self.list_files(folder_path, image_extension)
 
         # Create a pool of worker processes
-        num_processes = multiprocessing.cpu_count()
-        pool = multiprocessing.Pool(processes=num_processes)
+        if self.ncores > 0:
+            pool = multiprocessing.Pool(processes=self.ncores)
+        else:
+            num_processes = multiprocessing.cpu_count()
+            pool = multiprocessing.Pool(processes=num_processes)
 
         # Prepare arguments for the worker function
         worker_args = [
