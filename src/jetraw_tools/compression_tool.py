@@ -102,7 +102,7 @@ class CompressionTool:
 
         # Prepare input image
         locale.setlocale(locale.LC_ALL, locale.getlocale())
-        img_map = np.ascontiguousarray(img_map, dtype=np.uint16)
+        img_map = np.ascontiguousarray(img_map, dtype=img_map.dtype)
         dpcore.load_parameters(self.calibration_file)
         prepare_images(img_map, identifier=self.identifier)
 
