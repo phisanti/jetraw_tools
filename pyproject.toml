@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jetraw_tools"
+version = "0.3.7"
+description = "A collection of tools and helpers to work with the JetRaw compression libraries."
+authors = [
+    {name = "Santiago Cano-Muniz", email = "santiago.cano-muniz@unibas.ch"},
+]
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    # Add dependencies from requirements.txt here
+]
+
+[project.urls]
+Homepage = "https://github.com/phisanti/jetraw_tools"
+
+[project.scripts]
+jetraw_tools = "jetraw_tools.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
