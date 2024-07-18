@@ -31,7 +31,7 @@ parser.add_argument(
     "-id", "--identifier", type=str, default="", help="Identifier for capture mode"
 )
 parser.add_argument(
-    "-op", "--omit-processed", action="store_true", type=bool, default=True, help="omit files that have been processed"
+    "-op", "--omit-processed", action="store_true", default=True, help="omit files that have been processed"
 )
 
 parser.add_argument(
