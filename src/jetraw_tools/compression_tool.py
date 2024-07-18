@@ -39,13 +39,14 @@ class CompressionTool:
         calibration_file: str = None,
         identifier: str = "",
         ncores=0,
+        omit_processed: bool = True,
         verbose: bool = False,
     ):
         self.calibration_file = calibration_file
         self.identifier = identifier
         self.ncores = ncores
+        self.omit_processed = omit_processed
         self.verbose = verbose
-
     def list_files(self, folder_path: str, image_extension: str) -> list:
         """
         List all files in a folder with a specific extension.
@@ -171,6 +172,7 @@ class CompressionTool:
         ome_bool: bool,
         metadata_json: bool,
         remove_source: bool,
+        progress_info: tuple,
     ) -> int:
         """
         Process an image file.
@@ -184,11 +186,12 @@ class CompressionTool:
         :param ome_bool: Whether to use OME metadata.
         :param metadata_json: Whether to write metadata as JSON.
         :param remove_source: Whether to remove the source files after processing.
+        :param progress_info: The total number of files to process.
         :return: None
         """
 
         if self.verbose:
-            print(f"Processing {image_file}...")
+            print(f"Processing {image_file}... (File {progress_info[0]} of {progress_info[1]})")
 
         # Input/output files
         input_filename = os.path.join(folder_path, image_file)
@@ -273,6 +276,21 @@ class CompressionTool:
 
         image_files = self.list_files(folder_path, image_extension)
 
+        if self.omit_processed:
+            processed_files = set()
+            for file in os.listdir(output_folder):
+                base_name, _ = os.path.splitext(file)
+                processed_files.add(base_name)
+
+            original_count = len(image_files)
+            image_files = [file for file in image_files if os.path.splitext(file)[0] not in processed_files]
+            removed_count = original_count - len(image_files)
+
+        total_files = len(image_files)
+
+        if self.verbose:
+            print(f"Total files to process: {total_files}")
+            print(f'Files already processed: {removed_count}')
         # Create a pool of worker processes
         if self.ncores > 0:
             pool = multiprocessing.Pool(processes=self.ncores)
@@ -292,9 +310,11 @@ class CompressionTool:
                 ome_bool,
                 metadata_json,
                 remove_source,
+                (index+1, total_files),
             )
-            for image_file in image_files
+            for index, image_file in enumerate(image_files)
         ]
+
 
         # Run the worker function in parallel
         results = pool.starmap(self.process_image, worker_args)
