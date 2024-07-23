@@ -275,7 +275,8 @@ class CompressionTool:
             output_folder = folder_path
 
         image_files = self.list_files(folder_path, image_extension)
-
+        
+        removed_count = 0
         if self.omit_processed:
             processed_files = set()
             for file in os.listdir(output_folder):
