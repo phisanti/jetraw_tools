@@ -9,16 +9,16 @@ from typing import Tuple, Union, Dict, Any
 
 
 class ImageReader:
-    """
-    A class for reading images in various formats.
+    """Class for reading microscopy images in various formats.
 
-    :param input_filename: The input filename.
-    :type input_filename: str
-    :param image_extension: The image file extension.
-    :type image_extension: str
+    :param input_filename: Path to the image file
+    :param image_extension: File extension (.nd2, .tif, .tiff, etc)
+    :param read_ome: Whether to read OME metadata, defaults to True
+    :raises FileNotFoundError: If input file does not exist
+    :raises ValueError: If extension is not supported
     """
 
-    def __init__(self, input_filename: str, image_extension: str):
+    def __init__(self, input_filename: str, image_extension: str, read_ome: bool = True):
         if not os.path.isfile(input_filename):
             raise FileNotFoundError(f"No file found at {input_filename}")
 
@@ -38,13 +38,20 @@ class ImageReader:
 
         self.input_filename = input_filename
         self.image_extension = image_extension
+        self.read_ome = read_ome
 
         pass
 
     def read_nd2_image(self) -> Tuple[np.ndarray, ome_types.OME]:
+        """Read ND2 image file and metadata.
+
+        :return: Tuple of (image array, OME metadata)
+        :rtype: Tuple[np.ndarray, ome_types.OME]
+        """
         with nd2.ND2File(self.input_filename) as img_nd2:
             img_map = img_nd2.asarray().astype(np.uint16)
-
+            
+            # Extract and combine metadata
             ome_metadata = img_nd2.ome_metadata()
             metadata_dict = img_nd2.unstructured_metadata()
             flatten_metadata = flatten_dict(metadata_dict)
@@ -55,52 +62,51 @@ class ImageReader:
 
         return img_map, metadata
 
-    def read_ome_tiff(self) -> Tuple[np.ndarray, ome_types.OME]:
-        metadata = {}
+    def read_tiff(self) -> Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME, None]]:
+        """Read TIFF image with optional OME metadata.
+
+        :return: Tuple of (image array, metadata)
+        :rtype: Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME, None]]
+        """
         with tifffile.TiffFile(self.input_filename) as tif:
             img_map = tif.asarray()
-            metadata = ome_types.from_tiff(metadata)
-
+            if self.read_ome:
+                try:
+                    metadata = ome_types.from_tiff(tif)
+                except:
+                    try:
+                        metadata = ome_types.from_xml(tif.ome_metadata)
+                    except:
+                        metadata = None
+            else:
+                metadata = tif.imagej_metadata
+            
         return img_map, metadata
 
-    def read_p_tiff(
-        self, ome_bool: bool = False
-    ) -> Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME]]:
+    def read_p_tiff(self) -> Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME]]:
+        """Read pyramidal TIFF using specialized reader.
+
+        :return: Tuple of (image array, metadata)
+        :rtype: Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME]]
+        """
         img_map = imread(self.input_filename)
         with tifffile.TiffFile(self.input_filename) as tif:
-            if ome_bool:
+            if self.read_ome:
                 metadata = ome_types.from_xml(tif.ome_metadata)
             else:
                 metadata = tif.imagej_metadata
 
         return img_map, metadata
 
-    def read_tif_image(self) -> Tuple[np.ndarray, Dict[str, Any]]:
-        with tifffile.TiffFile(self.input_filename) as tif:
-            img_map = tif.asarray()
-            metadata = tif.imagej_metadata
-        return img_map, metadata
-
     def read_image(self) -> Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME]]:
-        """
-        Read any image.
+        """Read image based on file extension.
 
-        :return: The image map and metadata.
+        :return: Tuple of (image array, metadata)
+        :rtype: Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME]]
         """
         if self.image_extension == ".nd2":
             return self.read_nd2_image()
-
-        if self.image_extension in [".p.tif", ".p.tiff", ".ome.p.tif", ".ome.p.tiff"]:
-            if self.image_extension in [".ome.p.tif", ".ome.p.tiff"]:
-                ome_bool = True
-            else:
-                ome_bool = False
-            return self.read_p_tiff(ome_bool)
-
-        if self.image_extension in [".ome.tif", ".ome.tiff"]:
-            return self.read_ome_tiff()
-
-        if self.image_extension in [".tif", ".tiff"]:
-            return self.read_tif_image()
-
-        pass
+        elif self.image_extension in [".p.tif", ".p.tiff", ".ome.p.tif", ".ome.p.tiff"]:
+            return self.read_p_tiff()
+        else:
+            return self.read_tiff()
