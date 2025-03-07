@@ -108,7 +108,7 @@ class CompressionTool:
         prepare_images(img_map, identifier=self.identifier)
 
         # Compress input image to JetRaw compressed TIFF format
-        imwrite(target_file, img_map, description=None)
+        imwrite(target_file, img_map, description="")
         if metadata:
             if not ome_bool:
                 imageJ_metadata = True
