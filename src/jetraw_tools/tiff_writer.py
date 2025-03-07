@@ -46,7 +46,11 @@ class TiffWriter_5D:
 
     def close(self):
         if self._jrtif is not None:
-            self._jrtif.close()
+            try:
+                self._jrtif.close()
+            # Handle error when the upper with block is closed
+            except RuntimeError as e:
+                pass
         self._jrtif = None
 
     def write(self, image_buffer: np.ndarray) -> None:
