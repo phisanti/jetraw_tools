@@ -20,7 +20,7 @@ from jetraw_tools.logger import setup_logger
 
 
 def main():
-    # Pase and set locale
+    # Parse and set locale
     args = parser.parse_args()
     # locale.setlocale(locale.LC_ALL, locale.getlocale())
     # locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
@@ -56,13 +56,13 @@ def main():
 
     if identifier == "" or cal_file == "":
         logger.error(
-            "Identifier and calibration file must be set. Use --config to set them or provide them as arguments."
+            "Identifier and calibration file must be set. Use --settings to set them or provide them as arguments."
         )
         raise ValueError(
-            "Identifier and calibration file must be set. Use --config to set them or provide them as arguments."
+            "Identifier and calibration file must be set. Use --settings to set them or provide them as arguments."
         )
 
-    # Execure compress/decompress
+    # Execute compress/decompress
     if args.compress:
         full_path = os.path.join(os.getcwd(), args.compress)
         mode = "compress"
