@@ -1,8 +1,17 @@
+import importlib.metadata
+
+try:
+    __version__ = importlib.metadata.version("jetraw_tools")
+except importlib.metadata.PackageNotFoundError:
+    __version__ = "0.0.0"
+
 import os
 import re
 import locale
 import logging
 import configparser
+
+# Local package imports
 from jetraw_tools.parser import parser
 from jetraw_tools import jetraw_tiff
 from jetraw_tools.compression_tool import CompressionTool
@@ -65,6 +74,7 @@ def main():
         process_json = False
 
     if args.compress or args.decompress:
+        logger.info(f"Jetraw_tools package version: {__version__}")
         logger.info(
             f"Using calibration file: {os.path.basename(cal_file)} and identifier: {identifier}"
         )
