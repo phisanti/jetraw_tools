@@ -13,6 +13,7 @@ from .tiff_writer import imwrite, metadata_writer
 from .image_reader import ImageReader
 from .logger import logger
 
+
 class CompressionTool:
     """
     A tool for compressing and decompressing images using the JetRaw algorithm.
@@ -198,13 +199,17 @@ class CompressionTool:
         """
 
         if self.verbose:
-            logger.info(f"Processing {image_file}... (File {progress_info[0]} of {progress_info[1]})")
+            logger.info(
+                f"Processing {image_file}... (File {progress_info[0]} of {progress_info[1]})"
+            )
 
         # Input/output files
         input_filename = os.path.join(folder_path, image_file)
         output_filename = os.path.join(output_folder, image_file)
         if not ome_bool and process_metadata:
-            logger.warning("Metadata not allowed for *.p.tif files yet, omitting metadata...")
+            logger.warning(
+                "Metadata not allowed for *.p.tif files yet, omitting metadata..."
+            )
             process_metadata = False
 
         output_filename = add_extension(
@@ -259,7 +264,6 @@ class CompressionTool:
         metadata_json: bool = True,
         remove_source: bool = False,
         target_folder: str = None,  # New parameter for target folder
-
     ) -> bool:
         """
         Process a folder of images.
@@ -284,7 +288,7 @@ class CompressionTool:
                 suffix = "_decompressed"
             else:
                 suffix = "_compressed"
-            
+
             if os.path.isdir(folder_path):
                 output_folder = create_compress_folder(folder_path, suffix=suffix)
             else:
@@ -348,6 +352,8 @@ class CompressionTool:
             logger.info(f"Processed {len(image_files)} images")
             failed = sum(results)
             success_files = len(image_files) - failed
-            logger.info(f"{success_files} files processed correctly and {failed} images failed to process")
+            logger.info(
+                f"{success_files} files processed correctly and {failed} images failed to process"
+            )
 
         return True

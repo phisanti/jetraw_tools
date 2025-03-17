@@ -23,10 +23,11 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "-o", "--output", 
-    type=str, 
-    default=None, 
-    help='Optional output folder for processed images'
+    "-o",
+    "--output",
+    type=str,
+    default=None,
+    help="Optional output folder for processed images",
 )
 parser.add_argument(
     "-s", "--settings", action="store_true", help="Initialize the configuration"
