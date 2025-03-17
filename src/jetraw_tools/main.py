@@ -61,7 +61,9 @@ def main():
                 f"Using calibration file: {os.path.basename(cal_file)} and identifier: {identifier}"
             )
 
-        compressor = CompressionTool(cal_file, identifier, args.ncores, args.op, args.verbose)
+        compressor = CompressionTool(
+            cal_file, identifier, args.ncores, args.op, args.verbose
+        )
         compressor.process_folder(
             full_path,
             mode,
@@ -70,6 +72,7 @@ def main():
             ome_bool=True,
             metadata_json=process_json,
             remove_source=args.remove,
+            target_folder=args.output,
         )
 
 

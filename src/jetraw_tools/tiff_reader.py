@@ -89,7 +89,7 @@ class TiffReader:
                 pages_list = list(pages)
             except TypeError as e:
                 raise TypeError(
-                    f"Invalid type for pages: {e}." " Use e.g. array, list, int."
+                    f"Invalid type for pages: {e}. Use e.g. array, list, int."
                 )
             num_pages = len(pages_list)
 

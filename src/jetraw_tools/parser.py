@@ -21,6 +21,13 @@ parser.add_argument(
 parser.add_argument(
     "-c", "--compress", type=str, help="Path to file or folder to compress"
 )
+
+parser.add_argument(
+    "-o", "--output", 
+    type=str, 
+    default=None, 
+    help='Optional output folder for processed images'
+)
 parser.add_argument(
     "-s", "--settings", action="store_true", help="Initialize the configuration"
 )
@@ -31,7 +38,11 @@ parser.add_argument(
     "-i", "--identifier", type=str, default="", help="Identifier for capture mode"
 )
 parser.add_argument(
-    "--op", "--omit-processed", action="store_true", default=False, help="omit files that have been processed"
+    "--op",
+    "--omit-processed",
+    action="store_true",
+    default=False,
+    help="omit files that have been processed",
 )
 
 parser.add_argument(

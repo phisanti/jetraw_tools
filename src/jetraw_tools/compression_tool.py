@@ -1,10 +1,10 @@
 import os
 import numpy as np
 import tifffile
-import dpcore
 import locale
 import multiprocessing
 from functools import partial
+from .dpcore import load_parameters
 from .utils import prepare_images, add_extension, create_compress_folder
 from .tiff_writer import imwrite, metadata_writer
 from .image_reader import ImageReader
@@ -47,6 +47,7 @@ class CompressionTool:
         self.ncores = ncores
         self.omit_processed = omit_processed
         self.verbose = verbose
+
     def list_files(self, folder_path: str, image_extension: str) -> list:
         """
         List all files in a folder with a specific extension.
@@ -104,7 +105,7 @@ class CompressionTool:
         # Prepare input image
         locale.setlocale(locale.LC_ALL, locale.getlocale())
         img_map = np.ascontiguousarray(img_map, dtype=img_map.dtype)
-        dpcore.load_parameters(self.calibration_file)
+        load_parameters(self.calibration_file)
         prepare_images(img_map, identifier=self.identifier)
 
         # Compress input image to JetRaw compressed TIFF format
@@ -191,7 +192,9 @@ class CompressionTool:
         """
 
         if self.verbose:
-            print(f"Processing {image_file}... (File {progress_info[0]} of {progress_info[1]})")
+            print(
+                f"Processing {image_file}... (File {progress_info[0]} of {progress_info[1]})"
+            )
 
         # Input/output files
         input_filename = os.path.join(folder_path, image_file)
@@ -251,6 +254,8 @@ class CompressionTool:
         ome_bool: bool = True,
         metadata_json: bool = True,
         remove_source: bool = False,
+        target_folder: str = None,  # New parameter for target folder
+
     ) -> bool:
         """
         Process a folder of images.
@@ -262,20 +267,27 @@ class CompressionTool:
         :param ome_bool: Whether to use OME metadata.
         :param metadata_json: Whether to write metadata as JSON.
         :param remove_source: Whether to remove the source files.
+        :param target_folder: Optional target folder for processed images.
         """
 
-        # Create output folder
-        if mode == "decompress":
-            suffix = "_decompressed"
+        # Create or use the output folder (with check if it exists)
+        if target_folder:
+            output_folder = os.path.abspath(target_folder)
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder)
         else:
-            suffix = "_compressed"
-        if os.path.isdir(folder_path):
-            output_folder = create_compress_folder(folder_path, suffix=suffix)
-        else:
-            output_folder = folder_path
+            if mode == "decompress":
+                suffix = "_decompressed"
+            else:
+                suffix = "_compressed"
+            
+            if os.path.isdir(folder_path):
+                output_folder = create_compress_folder(folder_path, suffix=suffix)
+            else:
+                output_folder = folder_path
 
         image_files = self.list_files(folder_path, image_extension)
-        
+
         removed_count = 0
         if self.omit_processed:
             processed_files = set()
@@ -284,14 +296,18 @@ class CompressionTool:
                 processed_files.add(base_name)
 
             original_count = len(image_files)
-            image_files = [file for file in image_files if os.path.splitext(file)[0] not in processed_files]
+            image_files = [
+                file
+                for file in image_files
+                if os.path.splitext(file)[0] not in processed_files
+            ]
             removed_count = original_count - len(image_files)
 
         total_files = len(image_files)
 
         if self.verbose:
             print(f"Total files to process: {total_files}")
-            print(f'Files already processed: {removed_count}')
+            print(f"Files already processed: {removed_count}")
         # Create a pool of worker processes
         if self.ncores > 0:
             pool = multiprocessing.Pool(processes=self.ncores)
@@ -311,11 +327,10 @@ class CompressionTool:
                 ome_bool,
                 metadata_json,
                 remove_source,
-                (index+1, total_files),
+                (index + 1, total_files),
             )
             for index, image_file in enumerate(image_files)
         ]
-
 
         # Run the worker function in parallel
         results = pool.starmap(self.process_image, worker_args)

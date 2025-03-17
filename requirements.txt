@@ -1,5 +1,4 @@
 nd2
 numpy
-dpcore
 tifffile
 ome_types

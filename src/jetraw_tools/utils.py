@@ -1,9 +1,9 @@
 import os
-import dpcore
 import numpy as np
 import tifffile
 from ome_types.model import MapAnnotation, Map
 from ome_types.model.map import M
+from .dpcore import prepare_image
 
 
 def add_extension(
@@ -203,7 +203,7 @@ def prepare_images(
         if verbose:
             print("compress image")
 
-        dpcore.prepare_image(image_stack, identifier)
+        prepare_image(image_stack, identifier)
 
     depth += 1
 

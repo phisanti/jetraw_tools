@@ -69,7 +69,7 @@ class TiffWriter_5D:
             )
         if image_buffer.dtype != "uint16":
             raise TypeError(
-                f"Input data {image_buffer.dtype} is not supported." "Should be uint16."
+                f"Input data {image_buffer.dtype} is not supported.Should be uint16."
             )
 
         image_stack = self._check_and_adapt_input_image_5D(image_buffer)
@@ -107,13 +107,13 @@ class TiffWriter_5D:
         if num_dimensions == expected_dimensions:
             if image.dtype != "uint16":
                 raise TypeError(
-                    f"Input data {image.dtype} is not supported." "Should be uint16."
+                    f"Input data {image.dtype} is not supported.Should be uint16."
                 )
             if self.image_shape is None:
                 self.image_shape = image.shape[3:]
             elif self.image_shape != image.shape[3:]:
                 raise ValueError(
-                    "All images in the stack must have the same" " dimensions."
+                    "All images in the stack must have the same dimensions."
                 )
         else:
             raise ValueError(

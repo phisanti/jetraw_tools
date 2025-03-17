@@ -18,7 +18,9 @@ class ImageReader:
     :raises ValueError: If extension is not supported
     """
 
-    def __init__(self, input_filename: str, image_extension: str, read_ome: bool = True):
+    def __init__(
+        self, input_filename: str, image_extension: str, read_ome: bool = True
+    ):
         if not os.path.isfile(input_filename):
             raise FileNotFoundError(f"No file found at {input_filename}")
 
@@ -50,7 +52,7 @@ class ImageReader:
         """
         with nd2.ND2File(self.input_filename) as img_nd2:
             img_map = img_nd2.asarray().astype(np.uint16)
-            
+
             # Extract and combine metadata
             ome_metadata = img_nd2.ome_metadata()
             metadata_dict = img_nd2.unstructured_metadata()
@@ -62,7 +64,9 @@ class ImageReader:
 
         return img_map, metadata
 
-    def read_tiff(self) -> Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME, None]]:
+    def read_tiff(
+        self,
+    ) -> Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME, None]]:
         """Read TIFF image with optional OME metadata.
 
         :return: Tuple of (image array, metadata)
@@ -80,7 +84,7 @@ class ImageReader:
                         metadata = None
             else:
                 metadata = tif.imagej_metadata
-            
+
         return img_map, metadata
 
     def read_p_tiff(self) -> Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME]]:

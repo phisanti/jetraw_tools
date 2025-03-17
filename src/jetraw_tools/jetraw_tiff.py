@@ -23,8 +23,7 @@ def _check_path_pointer_type(system):
         return ctypes.c_char_p
     else:
         raise ValueError(
-            f"Unknown system '{system}'. "
-            "Expected one of 'windows', 'macOS' or 'linux'"
+            f"Unknown system '{system}'. Expected one of 'windows', 'macOS' or 'linux'"
         )
 
 
