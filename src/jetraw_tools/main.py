@@ -1,11 +1,13 @@
 import os
 import re
 import locale
+import logging
 import configparser
 from jetraw_tools.parser import parser
 from jetraw_tools import jetraw_tiff
 from jetraw_tools.compression_tool import CompressionTool
 from jetraw_tools.config import configjrt
+from jetraw_tools.logger import setup_logger
 
 
 def main():
@@ -13,6 +15,8 @@ def main():
     args = parser.parse_args()
     # locale.setlocale(locale.LC_ALL, locale.getlocale())
     # locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    logger = setup_logger(level=log_level)
 
     # Set default calibration file path
     if args.settings:
@@ -22,6 +26,8 @@ def main():
     if os.path.exists(config_file):
         config = configparser.ConfigParser()
         config.read(config_file)
+    else:
+        logger.warning(f"Config file not found at {config_file}")
 
     if args.calibration_file == "":
         cal_file = config["calibration_file"]["calibration_file"]
@@ -40,6 +46,7 @@ def main():
     jetraw_tiff._jetraw_tiff_lib.jetraw_tiff_set_license(licence_key.encode("utf-8"))
 
     if identifier == "" or cal_file == "":
+        logger.error("Identifier and calibration file must be set. Use --config to set them or provide them as arguments.")
         raise ValueError(
             "Identifier and calibration file must be set. Use --config to set them or provide them as arguments."
         )
@@ -56,10 +63,7 @@ def main():
         process_json = False
 
     if args.compress or args.decompress:
-        if args.verbose:
-            print(
-                f"Using calibration file: {os.path.basename(cal_file)} and identifier: {identifier}"
-            )
+        logger.info(f"Using calibration file: {os.path.basename(cal_file)} and identifier: {identifier}")
 
         compressor = CompressionTool(
             cal_file, identifier, args.ncores, args.op, args.verbose

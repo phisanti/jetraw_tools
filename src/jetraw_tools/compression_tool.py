@@ -1,14 +1,17 @@
 import os
+import logging
 import numpy as np
 import tifffile
 import locale
 import multiprocessing
+
+# Local package imports
 from functools import partial
 from .dpcore import load_parameters
 from .utils import prepare_images, add_extension, create_compress_folder
 from .tiff_writer import imwrite, metadata_writer
 from .image_reader import ImageReader
-
+from .logger import logger
 
 class CompressionTool:
     """
@@ -47,6 +50,8 @@ class CompressionTool:
         self.ncores = ncores
         self.omit_processed = omit_processed
         self.verbose = verbose
+        if verbose:
+            logger.setLevel(logging.DEBUG)
 
     def list_files(self, folder_path: str, image_extension: str) -> list:
         """
@@ -64,7 +69,7 @@ class CompressionTool:
                 f for f in os.listdir(folder_path) if f.endswith(image_extension)
             ]
         if len(image_files) == 0:
-            print(f"No file found in the folder with extension {image_extension}")
+            logger.info(f"No file found in the folder with extension {image_extension}")
 
         return image_files
 
@@ -123,6 +128,7 @@ class CompressionTool:
                 as_json=metadata_json,
             )
 
+        logger.debug(f"Successfully compressed image to: {target_file}")
         return True
 
     def decompress_image(
@@ -192,15 +198,13 @@ class CompressionTool:
         """
 
         if self.verbose:
-            print(
-                f"Processing {image_file}... (File {progress_info[0]} of {progress_info[1]})"
-            )
+            logger.info(f"Processing {image_file}... (File {progress_info[0]} of {progress_info[1]})")
 
         # Input/output files
         input_filename = os.path.join(folder_path, image_file)
         output_filename = os.path.join(output_folder, image_file)
         if not ome_bool and process_metadata:
-            print("Metadata not allowed for *.p.tif files yet, omiting metadata...")
+            logger.warning("Metadata not allowed for *.p.tif files yet, omitting metadata...")
             process_metadata = False
 
         output_filename = add_extension(
@@ -233,15 +237,15 @@ class CompressionTool:
                     metadata_json=False,
                 )
             else:
-                raise ValueError(
-                    f"Mode {mode} is not supported. Please use 'compress' or 'decompress'."
-                )
+                error_msg = f"Mode {mode} is not supported. Please use 'compress' or 'decompress'."
+                logger.error(error_msg)
+                raise ValueError(error_msg)
 
             if remove_source:
                 self.remove_files(output_filename, input_filename)
         except Exception as e:
             failed_files += 1
-            print(f"Error processing {image_file}: {e}")
+            logger.error(f"Error processing {image_file}: {e}")
 
         return failed_files
 
@@ -286,6 +290,7 @@ class CompressionTool:
             else:
                 output_folder = folder_path
 
+        logger.debug(f"Using output directory: {output_folder}")
         image_files = self.list_files(folder_path, image_extension)
 
         removed_count = 0
@@ -306,8 +311,8 @@ class CompressionTool:
         total_files = len(image_files)
 
         if self.verbose:
-            print(f"Total files to process: {total_files}")
-            print(f"Files already processed: {removed_count}")
+            logger.info(f"Total files to process: {total_files}")
+            logger.info(f"Files already processed: {removed_count}")
         # Create a pool of worker processes
         if self.ncores > 0:
             pool = multiprocessing.Pool(processes=self.ncores)
@@ -340,11 +345,9 @@ class CompressionTool:
         pool.join()
 
         if self.verbose:
-            print(f"Processed {len(image_files)} images")
+            logger.info(f"Processed {len(image_files)} images")
             failed = sum(results)
-            sucess_files = len(image_files) - failed
-            print(
-                f"{sucess_files} files processed correctly and {failed} images failed to process"
-            )
+            success_files = len(image_files) - failed
+            logger.info(f"{success_files} files processed correctly and {failed} images failed to process")
 
         return True
