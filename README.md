@@ -6,13 +6,22 @@ Welcome to `jetraw_tools`! This repository contains a collection of supplementar
 
 To install `jetraw_tools`, follow these simple steps:
 
-1. Make sure you have [Python](https://www.python.org/) installed on your system (version 3.6 or higher). 
+1. Make sure you have [Python](https://www.python.org/) installed on your system (version 3.8 or higher). 
 2. Install the Jetraw app and add it to the PATH environment as described in the [JetRaw](https://github.com/Jetraw/Jetraw) repository and install the `dpcore` python libraries. These are unfortunately not available to install via `pip` but you can find the wheel in the [JetRaw](https://github.com/Jetraw/Jetraw).
-4. Clone this repository to your local machine using the following command:
+3. Insatll this repository to your local machine using the following command:
 
 ```shell
 pip install git+https://github.com/phisanti/jetraw_tools.git
 ```
+### Dependencies
+
+The package requires the following main dependencies:
+- nd2
+- ome-types
+- tifffile
+- numpy
+
+These will be automatically installed when you install the package.
 
 ## 📖 Usage
 Once installed, you can use the jetraw_tools from the command line of from a python script. 
@@ -22,7 +31,10 @@ You can directly compress an image via:
 ```
 jetraw_tools -c /path/to/image_or_folder -c "calibration_file.dat" -i "identifier"  --extension ".ome.tiff"
 ```
-The calibrartion file and identifier are required for the compression. They can be provided each time or you can set a configuration file via.
+
+The calibration file and identifier are required for compression. You can provide these parameters with each command or configure them once using the settings command.
+
+By default, compressed files are saved in a new folder with your original folder's name plus the `_compressed` suffix. For custom output locations, use the `--output` parameter.
 
 ```
 jetraw_tools --settings
@@ -44,16 +56,18 @@ jetraw_tools -d "sample_images/" --extension ".ome.p.tiff"
 
 
 ### 📋 Options 
-- -c, --compress: path to image(s) to compress
-- -d, --decompress: path to image(s) to decompress
-- -s, --settings: Re-initialize configuration
-- --calibration_file: Path to calibration .dat file
-- --identifier: Image capture mode identifier
-- --extension: Input image file extension (default .tif)
-- --metadata: Process metadata (default True)
-- --json: Save metadata as JSON (default True)
-- --key: Pass licecne key to JetRaw (default None)
-- --remove: Delete original images after compression (default False)
+- `-c, --compress`: path to image(s) to compress
+- `-d, --decompress`: path to image(s) to decompress
+- `-s, --settings`: Re-initialize configuration
+- `--calibration_file`: Path to calibration .dat file
+- `--identifier`: Image capture mode identifier
+- `--extension`: Input image file extension (default .tif)
+- `--metadata`: Process metadata (default True)
+- `--json`: Save metadata as JSON (default True)
+- `--key`: Pass licence key to JetRaw (default None)
+- `--remove`: Delete original images after compression (default False)
+- `--output`: Specify a custom output folder for processed images
+- `--verbose`: Enable detailed logging output
 
 The compressed JetRaw files will be saved in a jetraw_compressed folder alongside the original images.
 
