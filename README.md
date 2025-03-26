@@ -71,6 +71,9 @@ jetraw_tools -d "sample_images/" --extension ".ome.p.tiff"
 
 The compressed JetRaw files will be saved in a jetraw_compressed folder alongside the original images.
 
+# 📜 Disclaimer
+This library is not affiliated with Dotphoton or Jetraw in any way, but we are grateful for their support.
+
 
 
 
