@@ -40,13 +40,16 @@ By default, compressed files are saved in a new folder with your original folder
 jetraw_tools --settings
 ```
 
-This command will:
+The configuration tool will guide you through each step with interactive prompts, making setup straightforward even for first-time users. This command will:
 - Create the ~/.config/jetraw_tools folder if it doesn't exist
-- Copy a calibration .dat
-- Store a list of identifiers
-- Add licence key
+- Copy a calibration .dat file to the configuration folder
+- Store a list of camera identifiers for easy reference
+- Detect and configure Jetraw and DPCore installation paths
+  - Automatically finds installed binaries when possible
+  - Allows manual entry of installation directories if needed
+- Add your license key for JetRaw functionality
 
-Then, default calibration .dat file and identifier don't need to be specified each time. Therefore, you can run:
+After configuration, the default calibration .dat file, identifier, and paths don't need to be specified each time you run the tool. Therefore, you can run simpler commands like:
 
 ```
 jetraw_tools -c "sample_images/" --extension ".ome.tiff"

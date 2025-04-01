@@ -1,138 +1,12 @@
 import numpy as np
-import os
-from sys import platform as _platform
 import ctypes
 import ctypes.util
 import functools
-
-
-# DPTiff Structure is an incomplete type
-class _DPTiffStruct(ctypes.Structure):
-    pass
-
-
-_dptiff_ptr = ctypes.POINTER(_DPTiffStruct)
-
-
-def _check_path_pointer_type(system):
-    """Check the pointer type for the given OS"""
-
-    if system == "windows":
-        return ctypes.c_wchar_p
-    elif system == "macOS" or system == "linux":
-        return ctypes.c_char_p
-    else:
-        raise ValueError(
-            f"Unknown system '{system}'. Expected one of 'windows', 'macOS' or 'linux'"
-        )
-
-
-def _adapt_path_to_os(path):
-    """Adapt the path to the OS specific type"""
-
-    system = _check_os()
-    if system == "windows":
-        return str(path)
-    elif system == "macOS" or system == "linux":
-        return bytes(path, "UTF-8")
-    else:
-        return path
-
-
-def _check_os():
-    """Check the current OS"""
-
-    system = ""
-    if _platform == "linux" or _platform == "linux2":
-        system = "linux"
-    elif _platform == "darwin":
-        system = "macOS"
-    elif _platform == "win32" or _platform == "win64":
-        system = "windows"
-    else:
-        raise ValueError(f"Platform {_platform} is not supported.")
-
-    return system
-
-
-def _load_libraries():
-    """Load the Jetraw dynamic libraries"""
-
-    system = _check_os()
-    # search for jetraw dir
-
-    try:
-        # add current path to PATH in case jetraw libraries are placed in here
-        pyjetraw_path = os.path.dirname(os.path.abspath(__file__))
-        env_path = os.environ["PATH"].split(os.pathsep)
-        if pyjetraw_path not in env_path:
-            os.environ["PATH"] = os.pathsep.join([pyjetraw_path] + env_path)
-
-        path_to_jetraw = ctypes.util.find_library("jetraw")
-        path_to_jetraw_tiff = ctypes.util.find_library("jetraw_tiff")
-
-        _jetraw_lib = ctypes.cdll.LoadLibrary(path_to_jetraw)
-        _jetraw_tiff_lib = ctypes.cdll.LoadLibrary(path_to_jetraw_tiff)
-
-    except OSError:
-        raise ImportError(f"JetRaw C libraries could not be loaded.")
-
-    # Register function signature
-    _jetraw_lib.dp_status_description.argtypes = [ctypes.c_uint32]
-    _jetraw_lib.dp_status_description.restype = ctypes.c_char_p
-
-    # Register jetraw_encode function signature
-    _jetraw_lib.jetraw_encode.argtypes = [
-        ctypes.POINTER(ctypes.c_uint16),
-        ctypes.c_uint32,
-        ctypes.c_uint32,
-        ctypes.c_char_p,
-        ctypes.POINTER(ctypes.c_int32),
-    ]
-
-    # Register jetraw_decode function signature
-    _jetraw_lib.jetraw_decode.argtypes = [
-        ctypes.c_char_p,
-        ctypes.c_int32,
-        ctypes.POINTER(ctypes.c_uint16),
-        ctypes.c_int32,
-    ]
-
-    # Register jetraw_tiff_open function signature
-    _jetraw_tiff_lib.jetraw_tiff_open.argtypes = [
-        _check_path_pointer_type(system),
-        ctypes.c_int,
-        ctypes.c_int,
-        ctypes.c_char_p,
-        ctypes.POINTER(_dptiff_ptr),
-        ctypes.c_char_p,
-    ]
-
-    # Register jetraw_tiff_append function signature
-    _jetraw_tiff_lib.jetraw_tiff_append.argtypes = [
-        _dptiff_ptr,
-        ctypes.POINTER(ctypes.c_ushort),
-    ]
-
-    # Register jetraw_tiff_read_page function signature
-    _jetraw_tiff_lib.jetraw_tiff_read_page.argtypes = [
-        _dptiff_ptr,
-        ctypes.POINTER(ctypes.c_ushort),
-        ctypes.c_int,
-    ]
-
-    # Register jetraw_tiff_close function signature
-    _jetraw_tiff_lib.jetraw_tiff_close.argtypes = [ctypes.POINTER(_dptiff_ptr)]
-
-    # getters for dp_tiff struct
-    _jetraw_tiff_lib.jetraw_tiff_get_width.argtypes = [_dptiff_ptr]
-    _jetraw_tiff_lib.jetraw_tiff_get_width.restype = ctypes.c_int
-    _jetraw_tiff_lib.jetraw_tiff_get_height.argtypes = [_dptiff_ptr]
-    _jetraw_tiff_lib.jetraw_tiff_get_height.restype = ctypes.c_int
-    _jetraw_tiff_lib.jetraw_tiff_get_pages.argtypes = [_dptiff_ptr]
-    _jetraw_tiff_lib.jetraw_tiff_get_pages.restype = ctypes.c_int
-
-    return _jetraw_lib, _jetraw_tiff_lib
+from .libs import (
+    _load_libraries,
+    _adapt_path_to_os,
+    _dptiff_ptr,
+)
 
 
 def dp_status_as_exception(func):
@@ -203,9 +77,16 @@ class JetrawTiff:
 
 
 # Initialize module
-_jetraw_lib, _jetraw_tiff_lib = _load_libraries()
+try:
+    _jetraw_lib, _jetraw_tiff_lib = _load_libraries(lib="jetraw")
+except (ImportError, AttributeError, OSError) as e:
+    _jetraw_lib = None
+    _jetraw_tiff_lib = None
 
 try:
     dp_status_as_exception(_jetraw_tiff_lib.jetraw_tiff_init)()
-except RuntimeError as e:
-    raise ImportError(e)
+except (RuntimeError, AttributeError) as e:
+    import warnings
+
+    # Change error for warning
+    warnings.warn(f"Jetraw C libraries could not be loaded: {e}")

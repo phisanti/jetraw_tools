@@ -52,7 +52,12 @@ def main():
 
     if args.key == "":
         licence_key = config["licence_key"]["key"]
-    jetraw_tiff._jetraw_tiff_lib.jetraw_tiff_set_license(licence_key.encode("utf-8"))
+    try:
+        jetraw_tiff._jetraw_tiff_lib.jetraw_tiff_set_license(
+            licence_key.encode("utf-8")
+        )
+    except AttributeError:
+        pass
 
     if identifier == "" or cal_file == "":
         logger.error(

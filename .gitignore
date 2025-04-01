@@ -3,5 +3,6 @@ src/jetraw_tools/jetraw_tools.egg-info/*
 src/jetraw_tools.egg-info/*
 build/*
 test/*
+test2/*
 tests/*
 .DS_Store

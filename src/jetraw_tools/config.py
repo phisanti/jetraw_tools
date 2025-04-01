@@ -1,6 +1,8 @@
 import os
 import shutil
 import glob
+import platform
+import subprocess
 import configparser
 
 
@@ -39,6 +41,9 @@ def configjrt():
         copy_calibration_file(config_folder)
         # Config image identifiers
         config_identifiers(config_folder)
+
+    # Add jetraw path
+    add_jetraw_paths(config_folder)
 
     # Add licence key
     add_licence_key(config_folder)
@@ -175,3 +180,121 @@ def copy_calibration_file(config_folder: str) -> None:
                 print("The specified file does not exist. Please try again.")
             except Exception as e:
                 print(f"An error occurred: {e}. Please try again.")
+
+
+def add_jetraw_paths(config_folder):
+    """Add Jetraw and DPCore installation paths to configuration
+
+    :param config_folder: Path to the configuration folder
+    :type config_folder: str
+    """
+
+    config_file = os.path.join(config_folder, "jetraw_tools.cfg")
+    config = configparser.ConfigParser()
+    config.read(config_file)
+
+    # Create section if it doesn't exist
+    if "jetraw_paths" not in config:
+        config.add_section("jetraw_paths")
+
+    # Check if paths already exist
+    current_jetraw = config.get("jetraw_paths", "jetraw", fallback=None)
+    current_dpcore = config.get("jetraw_paths", "dpcore", fallback=None)
+
+    if current_jetraw or current_dpcore:
+        if current_jetraw:
+            print(f"Current Jetraw installation: {current_jetraw}")
+        if current_dpcore:
+            print(f"Current DPCore installation: {current_dpcore}")
+        overwrite = input("Do you want to update these paths? (y/n): ")
+        if overwrite.lower() != "y":
+            print("Paths not updated.")
+            return
+
+    # Try to find binaries using which/where
+    binaries = {"jetraw": None, "dpcore": None}
+    cmd = "where" if platform.system() == "Windows" else "which"
+
+    for binary in binaries.keys():
+        try:
+            result = subprocess.run(
+                [cmd, binary], capture_output=True, text=True, check=False
+            )
+
+            if result.returncode == 0 and result.stdout.strip():
+                binary_full_path = result.stdout.strip().split("\n")[0]
+                # Get the bin directory
+                bin_dir = os.path.dirname(binary_full_path)
+                # Get the installation directory (parent of bin)
+                install_dir = os.path.dirname(bin_dir)
+                binaries[binary] = install_dir
+                print(f"Found {binary} at: {binary_full_path}")
+        except (subprocess.SubprocessError, FileNotFoundError):
+            pass
+
+    # Show detection status
+    if not binaries["jetraw"]:
+        print("Jetraw binary not detected automatically.")
+    if not binaries["dpcore"]:
+        print("DPCore binary not detected automatically.")
+
+    # Check if both were found
+    if binaries["jetraw"] and binaries["dpcore"]:
+        use_detected = input("Add the detected installations to the config? (y/n): ")
+        if use_detected.lower() == "y":
+            config["jetraw_paths"]["jetraw"] = binaries["jetraw"]
+            config["jetraw_paths"]["dpcore"] = binaries["dpcore"]
+            with open(config_file, "w") as f:
+                config.write(f)
+            print("Paths updated successfully.")
+            return
+
+    # Manual input if needed
+    print("\nManual configuration:")
+
+    # Manual input for binaries that weren't found
+    for binary_ in ["jetraw", "dpcore"]:
+        if not binaries[binary]:
+            while True:
+                if binary == "jetraw":
+                    prompt = (
+                        "Enter the Jetraw installation directory (or 'exit' to quit): "
+                    )
+                else:  # dpcore
+                    prompt = "Enter the DPCore installation directory (or 'same' if same as Jetraw): "
+
+                path = input(prompt)
+
+                # Handle exit option (jetraw only)
+                if binary == "jetraw" and path.lower() == "exit":
+                    print("Configuration cancelled.")
+                    return
+
+                # Handle same option (dpcore only)
+                if binary == "dpcore" and path.lower() == "same" and binaries["jetraw"]:
+                    binaries["dpcore"] = binaries["jetraw"]
+                    break
+
+                if not os.path.exists(path):
+                    print("The specified directory does not exist.")
+                    continue
+
+                # Check if it looks like a valid path
+                if os.path.exists(os.path.join(path, "bin")):
+                    binaries[binary] = path
+                    break
+                else:
+                    print(
+                        f"Warning: This doesn't look like a {binary} installation (no bin directory)."
+                    )
+                    use_anyway = input("Use anyway? (y/n): ")
+                    if use_anyway.lower() == "y":
+                        binaries[binary] = path
+                        break
+
+    # Save to config
+    config["jetraw_paths"]["jetraw"] = binaries["jetraw"]
+    config["jetraw_paths"]["dpcore"] = binaries["dpcore"]
+    with open(config_file, "w") as f:
+        config.write(f)
+    print("Paths updated successfully.")

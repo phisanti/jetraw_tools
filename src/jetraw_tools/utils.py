@@ -1,9 +1,21 @@
 import os
 import numpy as np
 import tifffile
+import locale
 from ome_types.model import MapAnnotation, Map
 from ome_types.model.map import M
 from .dpcore import prepare_image
+
+
+def setup_locale():
+    """Set up locale correctly, with fallback to C locale if needed."""
+    try:
+        locale.setlocale(locale.LC_ALL, locale.getlocale())
+    except locale.Error:
+        print(
+            "Warning: The system's default locale is unsupported. Falling back to the default 'C' locale."
+        )
+        locale.setlocale(locale.LC_ALL, "C")
 
 
 def add_extension(
