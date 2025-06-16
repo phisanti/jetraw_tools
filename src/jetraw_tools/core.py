@@ -8,7 +8,7 @@ import numpy as np
 
 def encode_raw(image: np.ndarray) -> np.ndarray:
     """Encode input 2D numpy array image (uint16 pixel type) using JetRaw compression.
-    
+
     :param image: Input image with pixel type uint16. Already dpcore prepared.
     :type image: np.ndarray
     :returns: Encoded 1D buffer (int8 type)
@@ -35,10 +35,10 @@ def encode_raw(image: np.ndarray) -> np.ndarray:
 
 def encode(image: np.ndarray) -> np.ndarray:
     """Encode input 2D numpy array image using JetRaw compression.
-    
+
     The encoded output 1D buffer stores the original shape of the input image in
     the first 8 bytes of the buffer (4 bytes width - 4 bytes height).
-    
+
     :param image: Input image with pixel type uint16. Already dpcore prepared.
     :type image: np.ndarray
     :returns: Encoded 1D buffer with type int8. Original image shape is stored at the beginning of buffer.
@@ -49,10 +49,9 @@ def encode(image: np.ndarray) -> np.ndarray:
     return np.r_[shape.view(dtype="b"), encoded]
 
 
-
 def decode_raw(raw_encoded_image: np.ndarray, output: np.ndarray) -> None:
     """Decode input raw_encoded_image and result is stored in output parameter.
-    
+
     :param raw_encoded_image: Jetraw encoded input buffer with int8 type.
     :type raw_encoded_image: np.ndarray
     :param output: Container for decoded image with original image shape and pixel type uint16.
@@ -74,7 +73,7 @@ def decode_raw(raw_encoded_image: np.ndarray, output: np.ndarray) -> None:
 
 def decode(encoded_image: np.ndarray) -> np.ndarray:
     """Decode input encoded_image and decoded 2D image is returned.
-    
+
     :param encoded_image: Jetraw encoded input buffer with int8 type.
     :type encoded_image: np.ndarray
     :returns: 2D numpy array containing decoded image with pixel type uint16.

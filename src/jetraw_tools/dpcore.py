@@ -6,6 +6,7 @@ from .libs import (
     _adapt_path_to_os,
 )
 
+
 def dp_status_as_exception(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):

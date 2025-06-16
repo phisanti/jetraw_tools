@@ -7,9 +7,10 @@ from typing import Union, Tuple
 
 class _DPTiffStruct(ctypes.Structure):
     """C structure for DPTiff objects.
-    
+
     This is an incomplete type used for opaque pointers to DPTiff structures.
     """
+
     pass
 
 
@@ -18,7 +19,7 @@ _dptiff_ptr = ctypes.POINTER(_DPTiffStruct)
 
 def _check_path_pointer_type(system: str) -> ctypes.c_char_p:
     """Determine the appropriate path pointer type for the given operating system.
-    
+
     :param system: Operating system identifier ('windows', 'macOS', or 'linux')
     :type system: str
     :returns: The appropriate ctypes pointer type for file paths
@@ -37,7 +38,7 @@ def _check_path_pointer_type(system: str) -> ctypes.c_char_p:
 
 def _check_os() -> str:
     """Determine the current operating system.
-    
+
     :returns: Operating system identifier ('windows', 'macOS', or 'linux')
     :rtype: str
     :raises ValueError: If the platform is not supported
@@ -57,7 +58,7 @@ def _check_os() -> str:
 
 def _adapt_path_to_os(path: str) -> Union[str, bytes]:
     """Convert a path string to the appropriate format for the current OS.
-    
+
     :param path: Path to be converted
     :type path: str
     :returns: Path in the appropriate format for the current OS
@@ -74,10 +75,10 @@ def _adapt_path_to_os(path: str) -> Union[str, bytes]:
 
 def _add_lib_paths(lib: str) -> bool:
     """Add library installation paths to the environment variables.
-    
+
     Reads paths from configuration file and adds bin/lib directories
     to the appropriate environment variables.
-    
+
     :param lib: Library identifier ('dpcore' or 'jetraw')
     :type lib: str
     :returns: True if paths were successfully added, False otherwise
@@ -143,7 +144,7 @@ def _add_lib_paths(lib: str) -> bool:
 
 def _load_libraries(lib: str) -> Tuple[ctypes.CDLL, ctypes.CDLL]:
     """Load the specified C libraries and configure function signatures.
-    
+
     :param lib: Library identifier ('dpcore' or 'jetraw')
     :type lib: str
     :returns: Tuple of loaded libraries (jetraw_lib, dpcore_lib) or (jetraw_lib, jetraw_tiff_lib)
