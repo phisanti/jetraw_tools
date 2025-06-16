@@ -46,6 +46,10 @@ class CompressionTool:
         omit_processed: bool = True,
         verbose: bool = False,
     ):
+        # Check if calibration file exists
+        if calibration_file is not None and not os.path.exists(calibration_file):
+            logger.error(f"\033[91m\033[1mCalibration file not found:\033[0m\033[91m {calibration_file}\033[0m")
+            raise FileNotFoundError(f"Calibration file does not exist: {calibration_file}")
         self.calibration_file = calibration_file
         self.identifier = identifier
         self.ncores = ncores
