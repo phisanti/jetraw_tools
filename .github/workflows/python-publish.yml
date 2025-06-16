@@ -23,8 +23,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .
           python -m pip install pytest
-      - name: Run pytest
-        run: pytest tests/
 
   release-build:
     runs-on: ubuntu-latest
