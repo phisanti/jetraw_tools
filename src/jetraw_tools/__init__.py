@@ -2,6 +2,7 @@
 from .utils import setup_locale
 
 setup_locale()
+__version__ = "1.0.0"
 
 
 # Define lazy loading functions
@@ -17,7 +18,7 @@ def get_jetraw_tiff():
 
 
 # Only expose what's needed without triggering imports
-__all__ = ["get_jetraw_tiff", "TiffReader", "imread", "TiffWriter_5D", "imwrite"]
+__all__ = ["CompressionTool",  "configjrt", "get_jetraw_tiff", "TiffReader", "imread", "TiffWriter_5D", "imwrite"]
 
 # These don't depend on jetraw libraries
 from .tiff_reader import TiffReader, imread

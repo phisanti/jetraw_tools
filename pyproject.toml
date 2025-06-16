@@ -24,6 +24,7 @@ dependencies = {file = ["requirements.txt"]}
 
 [project.urls]
 Homepage = "https://github.com/phisanti/jetraw_tools"
+Repository = "https://github.com/yourusername/jetraw-tools"
 
 [project.scripts]
 jetraw_tools = "jetraw_tools.main:main"
