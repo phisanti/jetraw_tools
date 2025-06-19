@@ -1,92 +1,285 @@
-import numpy as np
+import os
+from sys import platform as _platform
 import ctypes
-import functools
-from .libs import (
-    _load_libraries,
-    _adapt_path_to_os,
-    _dptiff_ptr,
-    has_valid_config,
-)
+import configparser
+from typing import Union, Tuple
+from pathlib import Path
 
 
-def dp_status_as_exception(func):
-    """Decorator to raise exception on non-zero dp status"""
+class _DPTiffStruct(ctypes.Structure):
+    """C structure for DPTiff objects.
 
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        dp_status = func(*args, **kwargs)
-        if dp_status != 0:
-            message = _jetraw_lib.dp_status_description(dp_status).decode("utf-8")
-            raise RuntimeError(message)
+    This is an incomplete type used for opaque pointers to DPTiff structures.
+    """
 
-    return wrapper
+    pass
 
 
-class JetrawTiff:
-    """Wrapper for Jetraw TIFF functions"""
+_dptiff_ptr = ctypes.POINTER(_DPTiffStruct)
 
-    def __init__(self):
-        self._handle = _dptiff_ptr()
-        self._href = ctypes.byref(self._handle)
 
-    @property
-    def width(self):
-        return _jetraw_tiff_lib.jetraw_tiff_get_width(self._handle)
+def _check_path_pointer_type(system: str) -> ctypes.c_char_p:
+    """Determine the appropriate path pointer type for the given operating system.
 
-    @property
-    def height(self):
-        return _jetraw_tiff_lib.jetraw_tiff_get_height(self._handle)
-
-    @property
-    def pages(self):
-        return _jetraw_tiff_lib.jetraw_tiff_get_pages(self._handle)
-
-    @dp_status_as_exception
-    def open(self, path, mode, width=0, height=0, description=""):
-        """Open a Jetraw TIFF file"""
-
-        cpath = _adapt_path_to_os(path)
-        cdescr = bytes(description, "UTF-8")
-        cmode = bytes(mode, "UTF-8")
-        return _jetraw_tiff_lib.jetraw_tiff_open(
-            cpath, width, height, cdescr, self._href, cmode
+    :param system: Operating system identifier ('windows', 'macOS', or 'linux')
+    :type system: str
+    :returns: The appropriate ctypes pointer type for file paths
+    :rtype: ctypes.c_char_p or ctypes.c_wchar_p
+    :raises ValueError: If the operating system is not supported
+    """
+    if system == "windows":
+        return ctypes.c_wchar_p
+    elif system == "macOS" or system == "linux":
+        return ctypes.c_char_p
+    else:
+        raise ValueError(
+            f"Unknown system '{system}'. Expected one of 'windows', 'macOS' or 'linux'"
         )
 
-    @dp_status_as_exception
-    def append_page(self, image):
-        """Append a page to the TIFF"""
 
-        bufptr = image.ctypes.data_as(ctypes.POINTER(ctypes.c_ushort))
-        return _jetraw_tiff_lib.jetraw_tiff_append(self._handle, bufptr)
+def _check_os() -> str:
+    """Determine the current operating system.
 
-    @dp_status_as_exception
-    def _read_page_buffer(self, bufptr, pageidx):
-        return _jetraw_tiff_lib.jetraw_tiff_read_page(self._handle, bufptr, pageidx)
+    :returns: Operating system identifier ('windows', 'macOS', or 'linux')
+    :rtype: str
+    :raises ValueError: If the platform is not supported
+    """
+    system = ""
+    if _platform == "linux" or _platform == "linux2":
+        system = "linux"
+    elif _platform == "darwin":
+        system = "macOS"
+    elif _platform == "win32" or _platform == "win64":
+        system = "windows"
+    else:
+        raise ValueError(f"Platform {_platform} is not supported.")
 
-    def read_page(self, pageidx):
-        """Read a page from the TIFF"""
-        image = np.empty((self.height, self.width), dtype=np.uint16)
-        bufptr = image.ctypes.data_as(ctypes.POINTER(ctypes.c_ushort))
-        self._read_page_buffer(bufptr, pageidx)
-        return image
-
-    @dp_status_as_exception
-    def close(self):
-        """Close the TIFF file"""
-        return _jetraw_tiff_lib.jetraw_tiff_close(self._href)
+    return system
 
 
-# Initialize module
-if has_valid_config():
+def _adapt_path_to_os(path: str) -> Union[str, bytes]:
+    """Convert a path string to the appropriate format for the current OS.
+
+    :param path: Path to be converted
+    :type path: str
+    :returns: Path in the appropriate format for the current OS
+    :rtype: str or bytes
+    """
+    system = _check_os()
+    if system == "windows":
+        return str(path)
+    elif system == "macOS" or system == "linux":
+        return bytes(path, "UTF-8")
+    else:
+        return path
+
+
+def _add_lib_paths(lib: str) -> bool:
+    """Add library installation paths to the environment variables.
+
+    Reads paths from configuration file and adds bin/lib directories
+    to the appropriate environment variables.
+
+    :param lib: Library identifier ('dpcore' or 'jetraw')
+    :type lib: str
+    :returns: True if paths were successfully added, False otherwise
+    :rtype: bool
+    """
+    # Read configuration file
+    config_file = os.path.expanduser("~/.config/jetraw_tools/jetraw_tools.cfg")
+    config = configparser.ConfigParser()
+    _os_platform = _check_os()
     try:
-        _jetraw_lib, _jetraw_tiff_lib = _load_libraries(lib="jetraw")
-        if _jetraw_tiff_lib is not None:
-            dp_status_as_exception(_jetraw_tiff_lib.jetraw_tiff_init)()
-    except Exception as e:
-        _jetraw_lib = None
-        _jetraw_tiff_lib = None
+        config.read(config_file)
+
+        # Get installation paths from config
+        if "jetraw_paths" in config:
+            install_path = None
+
+            # Use the specific library path or fallback to the other one
+            if lib == "dpcore" and "dpcore" in config["jetraw_paths"]:
+                install_path = config["jetraw_paths"]["dpcore"]
+            elif lib == "jetraw" and "jetraw" in config["jetraw_paths"]:
+                install_path = config["jetraw_paths"]["jetraw"]
+
+            if install_path:
+                # Add bin directory to PATH
+                bin_path = os.path.join(install_path, "bin")
+                if os.path.exists(bin_path):
+                    env_path = os.environ["PATH"].split(os.pathsep)
+                    if bin_path not in env_path:
+                        os.environ["PATH"] = os.pathsep.join([bin_path] + env_path)
+
+                # Add lib directory to appropriate environment variable
+                lib_path = os.path.join(install_path, "lib")
+                if os.path.exists(lib_path):
+                    # For macOS
+                    if _os_platform == "macOS":
+                        dyld_path = os.environ.get("DYLD_FALLBACK_LIBRARY_PATH", "")
+                        if lib_path not in dyld_path:
+                            os.environ["DYLD_FALLBACK_LIBRARY_PATH"] = os.pathsep.join(
+                                [lib_path]
+                                + (dyld_path.split(os.pathsep) if dyld_path else [])
+                            )
+                    # For Linux
+                    elif _os_platform == "linux":
+                        ld_path = os.environ.get("LD_LIBRARY_PATH", "")
+                        if lib_path not in ld_path:
+                            os.environ["LD_LIBRARY_PATH"] = os.pathsep.join(
+                                [lib_path]
+                                + (ld_path.split(os.pathsep) if ld_path else [])
+                            )
+                    # For Windows, add to PATH
+                    elif _os_platform == "windows":
+                        if lib_path not in env_path:
+                            os.environ["PATH"] = os.pathsep.join([lib_path] + env_path)
+
+                return True
+    except (FileNotFoundError, KeyError, configparser.Error) as e:
         import warnings
-        warnings.warn(f"Jetraw libraries could not be loaded: {e}")
-else:
-    _jetraw_lib = None
-    _jetraw_tiff_lib = None
+
+        warnings.warn(f"Error reading configuration: {e}")
+
+    return False
+
+
+def _load_libraries(lib: str) -> Tuple[ctypes.CDLL, ctypes.CDLL]:
+    """Load the specified C libraries and configure function signatures.
+
+    :param lib: Library identifier ('dpcore' or 'jetraw')
+    :type lib: str
+    :returns: Tuple of loaded libraries (jetraw_lib, dpcore_lib) or (jetraw_lib, jetraw_tiff_lib)
+    :rtype: Tuple[ctypes.CDLL, ctypes.CDLL]
+    :raises ValueError: If an invalid library is specified
+    :raises ImportError: If libraries could not be loaded
+    """
+    system = _check_os()
+
+    if lib not in ["dpcore", "jetraw"]:
+        raise ValueError("Invalid library specified. Expected 'dpcore' or 'jetraw'.")
+
+    # add current path to PATH in case jetraw libraries are placed in here
+    _add_lib_paths(lib)
+
+    if lib == "dpcore":
+        try:
+            path_to_jetraw = ctypes.util.find_library("jetraw")
+            path_to_dpcore = ctypes.util.find_library("dpcore")
+
+            _jetraw_lib = ctypes.cdll.LoadLibrary(path_to_jetraw)
+            _dpcore_lib = ctypes.cdll.LoadLibrary(path_to_dpcore)
+
+        except OSError:
+            raise ImportError(f"JetRaw/DPCore C libraries could not be loaded.")
+
+        # Register function signature
+        _jetraw_lib.dp_status_description.argtypes = [ctypes.c_uint32]
+        _jetraw_lib.dp_status_description.restype = ctypes.c_char_p
+
+        _dpcore_lib.dpcore_set_logfile.argtypes = [_check_path_pointer_type(system)]
+
+        _dpcore_lib.dpcore_load_parameters.argtypes = [_check_path_pointer_type(system)]
+
+        _dpcore_lib.dpcore_prepare_image.argtypes = [
+            ctypes.POINTER(ctypes.c_uint16),
+            ctypes.c_int32,
+            ctypes.c_char_p,
+            ctypes.c_float,
+        ]
+
+        _dpcore_lib.dpcore_embed_meta.argtypes = [
+            ctypes.POINTER(ctypes.c_uint16),
+            ctypes.c_int32,
+            ctypes.c_char_p,
+            ctypes.c_float,
+        ]
+        return _jetraw_lib, _dpcore_lib
+
+    elif lib == "jetraw":
+        try:
+            path_to_jetraw = ctypes.util.find_library("jetraw")
+            path_to_jetraw_tiff = ctypes.util.find_library("jetraw_tiff")
+
+            _jetraw_lib = ctypes.cdll.LoadLibrary(path_to_jetraw)
+            _jetraw_tiff_lib = ctypes.cdll.LoadLibrary(path_to_jetraw_tiff)
+
+        except OSError:
+            raise ImportError(f"JetRaw C libraries could not be loaded.")
+
+        # Register function signature
+        _jetraw_lib.dp_status_description.argtypes = [ctypes.c_uint32]
+        _jetraw_lib.dp_status_description.restype = ctypes.c_char_p
+
+        # Register jetraw_encode function signature
+        _jetraw_lib.jetraw_encode.argtypes = [
+            ctypes.POINTER(ctypes.c_uint16),
+            ctypes.c_uint32,
+            ctypes.c_uint32,
+            ctypes.c_char_p,
+            ctypes.POINTER(ctypes.c_int32),
+        ]
+
+        # Register jetraw_decode function signature
+        _jetraw_lib.jetraw_decode.argtypes = [
+            ctypes.c_char_p,
+            ctypes.c_int32,
+            ctypes.POINTER(ctypes.c_uint16),
+            ctypes.c_int32,
+        ]
+
+        # Register jetraw_tiff_open function signature
+        _jetraw_tiff_lib.jetraw_tiff_open.argtypes = [
+            _check_path_pointer_type(system),
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.POINTER(_dptiff_ptr),
+            ctypes.c_char_p,
+        ]
+
+        # Register jetraw_tiff_append function signature
+        _jetraw_tiff_lib.jetraw_tiff_append.argtypes = [
+            _dptiff_ptr,
+            ctypes.POINTER(ctypes.c_ushort),
+        ]
+
+        # Register jetraw_tiff_read_page function signature
+        _jetraw_tiff_lib.jetraw_tiff_read_page.argtypes = [
+            _dptiff_ptr,
+            ctypes.POINTER(ctypes.c_ushort),
+            ctypes.c_int,
+        ]
+
+        # Register jetraw_tiff_close function signature
+        _jetraw_tiff_lib.jetraw_tiff_close.argtypes = [ctypes.POINTER(_dptiff_ptr)]
+
+        # getters for dp_tiff struct
+        _jetraw_tiff_lib.jetraw_tiff_get_width.argtypes = [_dptiff_ptr]
+        _jetraw_tiff_lib.jetraw_tiff_get_width.restype = ctypes.c_int
+        _jetraw_tiff_lib.jetraw_tiff_get_height.argtypes = [_dptiff_ptr]
+        _jetraw_tiff_lib.jetraw_tiff_get_height.restype = ctypes.c_int
+        _jetraw_tiff_lib.jetraw_tiff_get_pages.argtypes = [_dptiff_ptr]
+        _jetraw_tiff_lib.jetraw_tiff_get_pages.restype = ctypes.c_int
+
+        return _jetraw_lib, _jetraw_tiff_lib
+
+
+def has_valid_config() -> bool:
+    """Check if valid configuration exists for library loading.
+    
+    Checks if the JetRaw Tools configuration file exists in the user's
+    configuration directory.
+    
+    :returns: True if valid configuration exists, False otherwise
+    :rtype: bool
+    """
+    
+    # Define config file path (cross-platform)
+    CONFIG_DIR = Path.home() / ".config" / "jetraw_tools"
+    CONFIG_FILE = CONFIG_DIR / "jetraw_tools.cfg"
+    
+    # Check if config file exists
+    if not CONFIG_FILE.exists():
+        return False
+    else:
+        return True
