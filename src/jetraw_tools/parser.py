@@ -24,14 +24,14 @@ from jetraw_tools.logger import setup_logger
 app = typer.Typer(
     name="jetraw_tools",
     help="JetRaw compression tools for image processing",
-    add_completion=False
+    add_completion=False,
 )
 console = Console()
 
 
 def version_callback(value: bool) -> None:
     """Display version information and exit.
-    
+
     :param value: Whether to show version (True triggers version display)
     :type value: bool
     :raises typer.Exit: Always exits after displaying version
@@ -45,102 +45,103 @@ def version_callback(value: bool) -> None:
 def compress(
     path: str = typer.Argument(..., help="Path to folder/file to compress"),
     calibration_file: str = typer.Option(
-        "", "--calibration_file", 
-        help="Path to calibration file (defaults to config file if not provided)"
+        "",
+        "--calibration_file",
+        help="Path to calibration file (defaults to config file if not provided)",
     ),
     identifier: str = typer.Option(
-        "", "-i", "--identifier", 
-        help="Camera identifier (defaults to first identifier from config file if not provided)"
+        "",
+        "-i",
+        "--identifier",
+        help="Camera identifier (defaults to first identifier from config file if not provided)",
     ),
     key: str = typer.Option(
-        "", "--key", 
-        help="License key (defaults to config file if not provided)"
+        "", "--key", help="License key (defaults to config file if not provided)"
     ),
     extension: str = typer.Option(
-        ".nd2", "--extension", 
-        help="File extension to process"
+        ".nd2", "--extension", help="File extension to process"
     ),
-    ncores: int = typer.Option(
-        0, "--ncores", 
-        help="Number of cores to use"
-    ),
+    ncores: int = typer.Option(0, "--ncores", help="Number of cores to use"),
     output: Optional[str] = typer.Option(
-        None, "-o", "--output", 
-        help="Output directory"
+        None, "-o", "--output", help="Output directory"
     ),
     metadata: bool = typer.Option(
-        True, "--metadata/--no-metadata", 
-        help="Process metadata"
+        True, "--metadata/--no-metadata", help="Process metadata"
     ),
-    json: bool = typer.Option(
-        False, "--json", 
-        help="Save metadata as JSON"
-    ),
+    json: bool = typer.Option(False, "--json", help="Save metadata as JSON"),
     remove: bool = typer.Option(
-        False, "--remove", 
-        help="Remove source files after processing"
+        False, "--remove", help="Remove source files after processing"
     ),
-    op: bool = typer.Option(
-        True, "--op/--no-op", 
-        help="Omit processed files"
-    ),
-    verbose: bool = typer.Option(
-        False, "-v", "--verbose", 
-        help="Verbose output"
-    )
+    op: bool = typer.Option(True, "--op/--no-op", help="Omit processed files"),
+    verbose: bool = typer.Option(False, "-v", "--verbose", help="Verbose output"),
 ) -> None:
     """Compress images using JetRaw compression."""
-    _process_files(path, "compress", calibration_file, identifier, key, extension, 
-                   ncores, output, metadata, json, remove, op, verbose)
+    _process_files(
+        path,
+        "compress",
+        calibration_file,
+        identifier,
+        key,
+        extension,
+        ncores,
+        output,
+        metadata,
+        json,
+        remove,
+        op,
+        verbose,
+    )
 
 
 @app.command()
 def decompress(
     path: str = typer.Argument(..., help="Path to folder/file to decompress"),
     calibration_file: str = typer.Option(
-        "", "--calibration_file", 
-        help="Path to calibration file (defaults to config file if not provided)"
+        "",
+        "--calibration_file",
+        help="Path to calibration file (defaults to config file if not provided)",
     ),
     identifier: str = typer.Option(
-        "", "-i", "--identifier", 
-        help="Camera identifier (defaults to first identifier from config file if not provided)"
+        "",
+        "-i",
+        "--identifier",
+        help="Camera identifier (defaults to first identifier from config file if not provided)",
     ),
     key: str = typer.Option(
-        "", "--key", 
-        help="License key (defaults to config file if not provided)"
+        "", "--key", help="License key (defaults to config file if not provided)"
     ),
     extension: str = typer.Option(
-        ".ome.p.tiff", "--extension", 
-        help="File extension to process"
+        ".ome.p.tiff", "--extension", help="File extension to process"
     ),
-    ncores: int = typer.Option(
-        0, "--ncores", 
-        help="Number of cores to use"
-    ),
+    ncores: int = typer.Option(0, "--ncores", help="Number of cores to use"),
     output: Optional[str] = typer.Option(
-        None, "-o", "--output", 
-        help="Output directory"
+        None, "-o", "--output", help="Output directory"
     ),
     metadata: bool = typer.Option(
-        True, "--metadata/--no-metadata", 
-        help="Process metadata"
+        True, "--metadata/--no-metadata", help="Process metadata"
     ),
     remove: bool = typer.Option(
-        False, "--remove", 
-        help="Remove source files after processing"
+        False, "--remove", help="Remove source files after processing"
     ),
-    op: bool = typer.Option(
-        True, "--op/--no-op", 
-        help="Omit processed files"
-    ),
-    verbose: bool = typer.Option(
-        False, "-v", "--verbose", 
-        help="Verbose output"
-    )
+    op: bool = typer.Option(True, "--op/--no-op", help="Omit processed files"),
+    verbose: bool = typer.Option(False, "-v", "--verbose", help="Verbose output"),
 ) -> None:
     """Decompress JetRaw compressed images."""
-    _process_files(path, "decompress", calibration_file, identifier, key, extension, 
-                   ncores, output, metadata, False, remove, op, verbose)
+    _process_files(
+        path,
+        "decompress",
+        calibration_file,
+        identifier,
+        key,
+        extension,
+        ncores,
+        output,
+        metadata,
+        False,
+        remove,
+        op,
+        verbose,
+    )
 
 
 @app.command()
@@ -155,14 +156,26 @@ def settings() -> None:
         raise typer.Exit(1)
 
 
-def _process_files(path: str, mode: str, calibration_file: str, identifier: str, 
-                   key: str, extension: str, ncores: int, output: Optional[str], 
-                   metadata: bool, json: bool, remove: bool, op: bool, verbose: bool) -> None:
+def _process_files(
+    path: str,
+    mode: str,
+    calibration_file: str,
+    identifier: str,
+    key: str,
+    extension: str,
+    ncores: int,
+    output: Optional[str],
+    metadata: bool,
+    json: bool,
+    remove: bool,
+    op: bool,
+    verbose: bool,
+) -> None:
     """Process files for compression or decompression operations.
-    
+
     Internal function that handles the core logic for file processing including
     configuration loading, parameter validation, and delegating to CompressionTool.
-    
+
     :param path: Path to folder or file to process
     :type path: str
     :param mode: Processing mode ('compress' or 'decompress')
@@ -191,7 +204,7 @@ def _process_files(path: str, mode: str, calibration_file: str, identifier: str,
     :type verbose: bool
     :raises typer.Exit: If configuration is invalid or processing fails
     """
-    
+
     # Setup logging
     log_level = logging.DEBUG if verbose else logging.INFO
     logger = setup_logger(level=log_level)
@@ -199,11 +212,13 @@ def _process_files(path: str, mode: str, calibration_file: str, identifier: str,
     # Load existing configuration
     config_manager = ConfigManager()
     config_file = os.path.expanduser("~/.config/jetraw_tools/jetraw_tools.cfg")
-    
+
     if not os.path.exists(config_file):
-        logger.error(f"Config file not found at {config_file}. Run 'jetraw_tools settings' first.")
+        logger.error(
+            f"Config file not found at {config_file}. Run 'jetraw_tools settings' first."
+        )
         raise typer.Exit(1)
-    
+
     config = configparser.ConfigParser()
     config.read(config_file)
 
@@ -212,7 +227,9 @@ def _process_files(path: str, mode: str, calibration_file: str, identifier: str,
         try:
             cal_file = config["calibration_file"]["calibration_file"]
         except KeyError:
-            logger.error("No calibration file configured. Run 'jetraw_tools settings' first.")
+            logger.error(
+                "No calibration file configured. Run 'jetraw_tools settings' first."
+            )
             raise typer.Exit(1)
     else:
         cal_file = calibration_file
@@ -222,7 +239,9 @@ def _process_files(path: str, mode: str, calibration_file: str, identifier: str,
         try:
             identifier = config["identifiers"]["id1"]
         except KeyError:
-            logger.error("No identifiers configured. Run 'jetraw_tools settings' first.")
+            logger.error(
+                "No identifiers configured. Run 'jetraw_tools settings' first."
+            )
             raise typer.Exit(1)
     elif re.match(r"^id\d+$", identifier):
         try:
@@ -236,11 +255,13 @@ def _process_files(path: str, mode: str, calibration_file: str, identifier: str,
         try:
             licence_key = config["licence_key"]["key"]
         except KeyError:
-            logger.error("No license key configured. Run 'jetraw_tools settings' first.")
+            logger.error(
+                "No license key configured. Run 'jetraw_tools settings' first."
+            )
             raise typer.Exit(1)
     else:
         licence_key = key
-    
+
     # Set license in jetraw library
     try:
         jetraw_tiff._jetraw_tiff_lib.jetraw_tiff_set_license(
@@ -256,7 +277,9 @@ def _process_files(path: str, mode: str, calibration_file: str, identifier: str,
     full_path = os.path.join(os.getcwd(), path)
 
     logger.info(f"Jetraw_tools package version: {__version__}")
-    logger.info(f"Using calibration file: {os.path.basename(cal_file)} and identifier: {identifier}")
+    logger.info(
+        f"Using calibration file: {os.path.basename(cal_file)} and identifier: {identifier}"
+    )
 
     compressor = CompressionTool(cal_file, identifier, ncores, op, verbose)
     compressor.process_folder(
@@ -274,11 +297,12 @@ def _process_files(path: str, mode: str, calibration_file: str, identifier: str,
 @app.callback()
 def main_callback(
     version: Optional[bool] = typer.Option(
-        None, "--version", 
-        callback=version_callback, 
-        is_eager=True, 
-        help="Show version and exit"
-    )
+        None,
+        "--version",
+        callback=version_callback,
+        is_eager=True,
+        help="Show version and exit",
+    ),
 ) -> None:
     """JetRaw compression tools for image processing."""
     pass

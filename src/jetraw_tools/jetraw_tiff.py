@@ -12,10 +12,10 @@ from .libs import (
 
 def dp_status_as_exception(func: Callable[..., int]) -> Callable[..., None]:
     """Decorator that converts DPCore status codes to exceptions.
-    
+
     Wraps functions that return DPCore status codes and raises RuntimeError
     if the status code indicates an error (non-zero).
-    
+
     :param func: Function that returns a DPCore status code
     :type func: Callable[..., int]
     :returns: Wrapped function that raises exceptions on error
@@ -38,7 +38,7 @@ class JetrawTiff:
 
     def __init__(self) -> None:
         """Initialize a new JetrawTiff instance.
-        
+
         Creates a new TIFF handle for Jetraw operations.
         """
         self._handle = _dptiff_ptr()
@@ -47,7 +47,7 @@ class JetrawTiff:
     @property
     def width(self) -> int:
         """Get the width of the TIFF image.
-        
+
         :returns: Image width in pixels
         :rtype: int
         """
@@ -56,7 +56,7 @@ class JetrawTiff:
     @property
     def height(self) -> int:
         """Get the height of the TIFF image.
-        
+
         :returns: Image height in pixels
         :rtype: int
         """
@@ -65,16 +65,23 @@ class JetrawTiff:
     @property
     def pages(self) -> int:
         """Get the number of pages in the TIFF file.
-        
+
         :returns: Number of pages
         :rtype: int
         """
         return _jetraw_tiff_lib.jetraw_tiff_get_pages(self._handle)
 
     @dp_status_as_exception
-    def open(self, path: str, mode: str, width: int = 0, height: int = 0, description: str = "") -> int:
+    def open(
+        self,
+        path: str,
+        mode: str,
+        width: int = 0,
+        height: int = 0,
+        description: str = "",
+    ) -> int:
         """Open a Jetraw TIFF file.
-        
+
         :param path: Path to the TIFF file
         :type path: str
         :param mode: File opening mode
@@ -99,7 +106,7 @@ class JetrawTiff:
     @dp_status_as_exception
     def append_page(self, image: np.ndarray) -> int:
         """Append a page to the TIFF file.
-        
+
         :param image: Image array to append
         :type image: np.ndarray
         :returns: DPCore status code
@@ -110,9 +117,11 @@ class JetrawTiff:
         return _jetraw_tiff_lib.jetraw_tiff_append(self._handle, bufptr)
 
     @dp_status_as_exception
-    def _read_page_buffer(self, bufptr: ctypes.POINTER(ctypes.c_ushort), pageidx: int) -> int:
+    def _read_page_buffer(
+        self, bufptr: ctypes.POINTER(ctypes.c_ushort), pageidx: int
+    ) -> int:
         """Read a page from the TIFF into a buffer.
-        
+
         :param bufptr: Pointer to the buffer to read into
         :type bufptr: ctypes.POINTER(ctypes.c_ushort)
         :param pageidx: Page index to read
@@ -124,7 +133,7 @@ class JetrawTiff:
 
     def read_page(self, pageidx: int) -> np.ndarray:
         """Read a page from the TIFF file.
-        
+
         :param pageidx: Page index to read
         :type pageidx: int
         :returns: Image array containing the page data
@@ -138,7 +147,7 @@ class JetrawTiff:
     @dp_status_as_exception
     def close(self) -> int:
         """Close the TIFF file.
-        
+
         :returns: DPCore status code
         :rtype: int
         """

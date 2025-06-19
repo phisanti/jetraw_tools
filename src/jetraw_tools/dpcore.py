@@ -11,16 +11,17 @@ from .libs import (
 
 def dp_status_as_exception(func: Callable[..., int]) -> Callable[..., None]:
     """Decorator that converts DPCore status codes to exceptions.
-    
+
     Wraps functions that return DPCore status codes and raises RuntimeError
     if the status code indicates an error (non-zero).
-    
+
     :param func: Function that returns a DPCore status code
     :type func: Callable[..., int]
     :returns: Wrapped function that raises exceptions on error
     :rtype: Callable[..., None]
     :raises RuntimeError: If the wrapped function returns a non-zero status code
     """
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         dp_status = func(*args, **kwargs)
@@ -48,7 +49,7 @@ except (RuntimeError, AttributeError) as e:
 
 def set_loglevel(level: str) -> None:
     """Set the logging level for DPCore operations.
-    
+
     :param level: Log level ('NONE', 'INFO', or 'DEBUG')
     :type level: str
     :raises ValueError: If level is not one of the valid options
@@ -64,7 +65,7 @@ def set_loglevel(level: str) -> None:
 @dp_status_as_exception
 def set_logfile(path: str) -> int:
     """Set the log file path for DPCore operations.
-    
+
     :param path: Path to the log file
     :type path: str
     :returns: DPCore status code
@@ -77,7 +78,7 @@ def set_logfile(path: str) -> int:
 @dp_status_as_exception
 def load_parameters(path: str) -> int:
     """Load DPCore parameters from a file.
-    
+
     :param path: Path to the parameters file
     :type path: str
     :returns: DPCore status code
@@ -90,7 +91,7 @@ def load_parameters(path: str) -> int:
 @dp_status_as_exception
 def prepare_image(image: np.ndarray, identifier: str, error_bound: int = 1) -> int:
     """Prepare an image for DPCore processing.
-    
+
     :param image: Input image array
     :type image: np.ndarray
     :param identifier: Image identifier string
@@ -111,7 +112,7 @@ def prepare_image(image: np.ndarray, identifier: str, error_bound: int = 1) -> i
 @dp_status_as_exception
 def embed_meta(image: np.ndarray, identifier: str, error_bound: int = 1) -> int:
     """Embed metadata into an image using DPCore.
-    
+
     :param image: Input image array
     :type image: np.ndarray
     :param identifier: Image identifier string

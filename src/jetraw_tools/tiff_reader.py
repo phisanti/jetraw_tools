@@ -29,22 +29,27 @@ class TiffReader:
 
     def __del__(self) -> None:
         """Destructor that ensures the file is closed.
-        
+
         Automatically called when the object is garbage collected.
         """
         self.close()
 
-    def __enter__(self) -> 'TiffReader':
+    def __enter__(self) -> "TiffReader":
         """Context manager entry.
-        
+
         :returns: The TiffReader instance
         :rtype: TiffReader
         """
         return self
 
-    def __exit__(self, exc_type: Optional[type], exc_value: Optional[Exception], traceback: Optional[Any]) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[type],
+        exc_value: Optional[Exception],
+        traceback: Optional[Any],
+    ) -> None:
         """Context manager exit.
-        
+
         :param exc_type: Exception type if an exception occurred
         :type exc_type: Optional[type]
         :param exc_value: Exception value if an exception occurred
@@ -56,7 +61,7 @@ class TiffReader:
 
     def close(self) -> None:
         """Close the TIFF file and release resources.
-        
+
         Should be called when finished with the TiffReader instance.
         """
         if self._jrtif is not None:
@@ -66,7 +71,7 @@ class TiffReader:
     @property
     def width(self) -> int:
         """Get the width of the TIFF image.
-        
+
         :returns: Image width in pixels
         :rtype: int
         :raises RuntimeError: If file was already closed
@@ -78,7 +83,7 @@ class TiffReader:
     @property
     def height(self) -> int:
         """Get the height of the TIFF image.
-        
+
         :returns: Image height in pixels
         :rtype: int
         :raises RuntimeError: If file was already closed
@@ -90,7 +95,7 @@ class TiffReader:
     @property
     def pages(self) -> int:
         """Get the number of pages in the TIFF file.
-        
+
         :returns: Number of pages
         :rtype: int
         :raises RuntimeError: If file was already closed
@@ -101,7 +106,7 @@ class TiffReader:
 
     def read(self, pages: Optional[Union[int, range, List[int]]] = None) -> np.ndarray:
         """Read pages from the TIFF file.
-        
+
         :param pages: Indices of TIFF pages to be read. By default all pages are read
         :type pages: Optional[Union[int, range, List[int]]]
         :returns: Image data as numpy array
@@ -123,9 +128,11 @@ class TiffReader:
 
         return np.squeeze(out)
 
-    def _compute_list_to_read(self, pages: Optional[Union[int, range, List[int]]]) -> Tuple[List[int], int]:
+    def _compute_list_to_read(
+        self, pages: Optional[Union[int, range, List[int]]]
+    ) -> Tuple[List[int], int]:
         """Compute the list of page indices to read.
-        
+
         :param pages: Page specification (int, range, list, or None for all pages)
         :type pages: Optional[Union[int, range, List[int]]]
         :returns: Tuple of (page indices list, number of pages)
@@ -150,9 +157,11 @@ class TiffReader:
         return pages_list, num_pages
 
 
-def imread(input_tiff_filename: str, pages: Optional[Union[int, range, List[int]]] = None) -> np.ndarray:
+def imread(
+    input_tiff_filename: str, pages: Optional[Union[int, range, List[int]]] = None
+) -> np.ndarray:
     """Read JetRaw compressed TIFF file from disk and store in numpy array.
-    
+
     Refer to the TiffReader class and its read function for more information.
 
     :param input_tiff_filename: File name of input TIFF file to be read from disk
@@ -168,7 +177,9 @@ def imread(input_tiff_filename: str, pages: Optional[Union[int, range, List[int]
         return image
 
 
-def read_metadata(input_tiff_filename: str, ome: bool = False) -> Union[Dict[str, Any], Any]:
+def read_metadata(
+    input_tiff_filename: str, ome: bool = False
+) -> Union[Dict[str, Any], Any]:
     """Read metadata from a TIFF file.
 
     :param input_tiff_filename: The path to the input TIFF file

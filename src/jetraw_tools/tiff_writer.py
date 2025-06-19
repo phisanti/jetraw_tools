@@ -23,7 +23,7 @@ class TiffWriter_5D:
 
     def __init__(self, filepath: str, description: str = "") -> None:
         """Open TIFF file for writing.
-        
+
         Open TIFF file for writing. An empty TIFF file is created if there is no input data passed.
 
         :param filepath: File name for output TIFF file
@@ -39,22 +39,27 @@ class TiffWriter_5D:
 
     def __del__(self) -> None:
         """Destructor that ensures the file is closed.
-        
+
         Automatically called when the object is garbage collected.
         """
         self.close()
 
-    def __enter__(self) -> 'TiffWriter_5D':
+    def __enter__(self) -> "TiffWriter_5D":
         """Context manager entry.
-        
+
         :returns: The TiffWriter_5D instance
         :rtype: TiffWriter_5D
         """
         return self
 
-    def __exit__(self, exc_type: Optional[type], exc_value: Optional[Exception], traceback: Optional[Any]) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[type],
+        exc_value: Optional[Exception],
+        traceback: Optional[Any],
+    ) -> None:
         """Context manager exit.
-        
+
         :param exc_type: Exception type if an exception occurred
         :type exc_type: Optional[type]
         :param exc_value: Exception value if an exception occurred
@@ -66,7 +71,7 @@ class TiffWriter_5D:
 
     def close(self) -> None:
         """Close the TIFF file and release resources.
-        
+
         Should be called when finished with the TiffWriter_5D instance.
         """
         if self._jrtif is not None:
@@ -122,7 +127,7 @@ class TiffWriter_5D:
 
     def _check_and_adapt_input_image_5D(self, image: np.ndarray) -> np.ndarray:
         """Ensures consistent dimensions for iteration, adding dummy dimensions if needed.
-        
+
         :param image: Input image array
         :type image: np.ndarray
         :returns: Image array with exactly 5 dimensions
@@ -156,9 +161,11 @@ class TiffWriter_5D:
         return image
 
 
-def imwrite(output_tiff_filename: str, input_image: np.ndarray, description: str = "") -> bool:
+def imwrite(
+    output_tiff_filename: str, input_image: np.ndarray, description: str = ""
+) -> bool:
     """Write numpy array to a JetRaw compressed TIFF file.
-    
+
     Refer to the TiffWriter class and its write function for more information.
 
     :param output_tiff_filename: File name of output TIFF file to be written into disk
