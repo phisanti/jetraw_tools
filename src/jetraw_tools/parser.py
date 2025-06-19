@@ -29,7 +29,13 @@ app = typer.Typer(
 console = Console()
 
 
-def version_callback(value: bool):
+def version_callback(value: bool) -> None:
+    """Display version information and exit.
+    
+    :param value: Whether to show version (True triggers version display)
+    :type value: bool
+    :raises typer.Exit: Always exits after displaying version
+    """
     if value:
         typer.echo(f"jetraw_tools version: {__version__}")
         raise typer.Exit()
@@ -82,7 +88,7 @@ def compress(
         False, "-v", "--verbose", 
         help="Verbose output"
     )
-):
+) -> None:
     """Compress images using JetRaw compression."""
     _process_files(path, "compress", calibration_file, identifier, key, extension, 
                    ncores, output, metadata, json, remove, op, verbose)
@@ -131,14 +137,14 @@ def decompress(
         False, "-v", "--verbose", 
         help="Verbose output"
     )
-):
+) -> None:
     """Decompress JetRaw compressed images."""
     _process_files(path, "decompress", calibration_file, identifier, key, extension, 
                    ncores, output, metadata, False, remove, op, verbose)
 
 
 @app.command()
-def settings():
+def settings() -> None:
     """Run configuration setup wizard."""
     logger = setup_logger(level=logging.INFO)
     logger.info("Starting configuration setup...")
@@ -151,8 +157,40 @@ def settings():
 
 def _process_files(path: str, mode: str, calibration_file: str, identifier: str, 
                    key: str, extension: str, ncores: int, output: Optional[str], 
-                   metadata: bool, json: bool, remove: bool, op: bool, verbose: bool):
-    """Internal function to handle file processing logic."""
+                   metadata: bool, json: bool, remove: bool, op: bool, verbose: bool) -> None:
+    """Process files for compression or decompression operations.
+    
+    Internal function that handles the core logic for file processing including
+    configuration loading, parameter validation, and delegating to CompressionTool.
+    
+    :param path: Path to folder or file to process
+    :type path: str
+    :param mode: Processing mode ('compress' or 'decompress')
+    :type mode: str
+    :param calibration_file: Path to calibration file
+    :type calibration_file: str
+    :param identifier: Camera identifier
+    :type identifier: str
+    :param key: License key
+    :type key: str
+    :param extension: File extension to process
+    :type extension: str
+    :param ncores: Number of cores to use
+    :type ncores: int
+    :param output: Output directory path
+    :type output: Optional[str]
+    :param metadata: Whether to process metadata
+    :type metadata: bool
+    :param json: Whether to save metadata as JSON
+    :type json: bool
+    :param remove: Whether to remove source files after processing
+    :type remove: bool
+    :param op: Whether to omit processed files
+    :type op: bool
+    :param verbose: Whether to enable verbose output
+    :type verbose: bool
+    :raises typer.Exit: If configuration is invalid or processing fails
+    """
     
     # Setup logging
     log_level = logging.DEBUG if verbose else logging.INFO
@@ -241,6 +279,6 @@ def main_callback(
         is_eager=True, 
         help="Show version and exit"
     )
-):
+) -> None:
     """JetRaw compression tools for image processing."""
     pass
