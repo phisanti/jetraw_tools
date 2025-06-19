@@ -264,8 +264,15 @@ def _load_libraries(lib: str) -> Tuple[ctypes.CDLL, ctypes.CDLL]:
         return _jetraw_lib, _jetraw_tiff_lib
 
 
-def has_valid_config():
-    """Check if valid configuration exists for library loading"""
+def has_valid_config() -> bool:
+    """Check if valid configuration exists for library loading.
+    
+    Checks if the JetRaw Tools configuration file exists in the user's
+    configuration directory.
+    
+    :returns: True if valid configuration exists, False otherwise
+    :rtype: bool
+    """
     
     # Define config file path (cross-platform)
     CONFIG_DIR = Path.home() / ".config" / "jetraw_tools"
