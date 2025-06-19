@@ -1,11 +1,11 @@
 import numpy as np
 import ctypes
-import ctypes.util
 import functools
 from .libs import (
     _load_libraries,
     _adapt_path_to_os,
     _dptiff_ptr,
+    has_valid_config,
 )
 
 
@@ -77,16 +77,16 @@ class JetrawTiff:
 
 
 # Initialize module
-try:
-    _jetraw_lib, _jetraw_tiff_lib = _load_libraries(lib="jetraw")
-except (ImportError, AttributeError, OSError) as e:
+if has_valid_config():
+    try:
+        _jetraw_lib, _jetraw_tiff_lib = _load_libraries(lib="jetraw")
+        if _jetraw_tiff_lib is not None:
+            dp_status_as_exception(_jetraw_tiff_lib.jetraw_tiff_init)()
+    except Exception as e:
+        _jetraw_lib = None
+        _jetraw_tiff_lib = None
+        import warnings
+        warnings.warn(f"Jetraw libraries could not be loaded: {e}")
+else:
     _jetraw_lib = None
     _jetraw_tiff_lib = None
-
-try:
-    dp_status_as_exception(_jetraw_tiff_lib.jetraw_tiff_init)()
-except (RuntimeError, AttributeError) as e:
-    import warnings
-
-    # Change error for warning
-    warnings.warn(f"Jetraw C libraries could not be loaded: {e}")

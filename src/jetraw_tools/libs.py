@@ -3,6 +3,7 @@ from sys import platform as _platform
 import ctypes
 import configparser
 from typing import Union, Tuple
+from pathlib import Path
 
 
 class _DPTiffStruct(ctypes.Structure):
@@ -261,3 +262,17 @@ def _load_libraries(lib: str) -> Tuple[ctypes.CDLL, ctypes.CDLL]:
         _jetraw_tiff_lib.jetraw_tiff_get_pages.restype = ctypes.c_int
 
         return _jetraw_lib, _jetraw_tiff_lib
+
+
+def has_valid_config():
+    """Check if valid configuration exists for library loading"""
+    
+    # Define config file path (cross-platform)
+    CONFIG_DIR = Path.home() / ".config" / "jetraw_tools"
+    CONFIG_FILE = CONFIG_DIR / "jetraw_tools.cfg"
+    
+    # Check if config file exists
+    if not CONFIG_FILE.exists():
+        return False
+    else:
+        return True

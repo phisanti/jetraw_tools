@@ -1,9 +1,9 @@
 import ctypes
-import ctypes.util
 import functools
 from .libs import (
     _load_libraries,
     _adapt_path_to_os,
+    has_valid_config,
 )
 
 
@@ -19,18 +19,22 @@ def dp_status_as_exception(func):
 
 
 # Initialize module
-try:
-    _jetraw_lib, _dpcore_lib = _load_libraries(lib="dpcore")
-except (ImportError, AttributeError, OSError) as e:
-    _jetraw_lib = None
-    _dpcore_lib = None
+if has_valid_config():
+    try:
+        _jetraw_lib, _dpcore_lib = _load_libraries(lib="dpcore")
+    except (ImportError, AttributeError, OSError) as e:
+        _jetraw_lib = None
+        _dpcore_lib = None
 
-try:
-    _dpcore_lib.dpcore_init()
-except (RuntimeError, AttributeError) as e:
-    import warnings
+    try:
+        _dpcore_lib.dpcore_init()
+    except (RuntimeError, AttributeError) as e:
+        import warnings
 
-    warnings.warn(f"DPCore C libraries could not be loaded: {e}")
+        warnings.warn(f"DPCore C libraries could not be loaded: {e}")
+    else:
+        _jetraw_lib = None
+        _dpcore_lib = None
 
 
 def set_loglevel(level):

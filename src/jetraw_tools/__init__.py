@@ -2,7 +2,7 @@
 from .utils import setup_locale
 
 setup_locale()
-__version__ = "1.0.0"
+__version__ = "0.7.0"
 
 
 # Define lazy loading functions
@@ -20,7 +20,7 @@ def get_jetraw_tiff():
 # Only expose what's needed without triggering imports
 __all__ = [
     "CompressionTool",
-    "configjrt",
+    "get_config_manager",
     "get_jetraw_tiff",
     "TiffReader",
     "imread",
