@@ -43,7 +43,12 @@ class TiffReader:
         """
         return self
 
-    def __exit__(self, *args) -> None:
+    def __exit__(
+        self, 
+        exc_type: Optional[type], 
+        exc_value: Optional[BaseException], 
+        traceback: Optional[Any]
+    ) -> None:
         """Context manager exit.
 
         Automatically closes the TIFF file when exiting the context.
