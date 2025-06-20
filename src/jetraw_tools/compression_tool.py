@@ -18,24 +18,19 @@ class CompressionTool:
     """
     A tool for compressing and decompressing images using the JetRaw algorithm.
 
-    :param calibration_file: The calibration file to use.
+    Handles batch processing of images with metadata preservation options.
+
+    :param calibration_file: Path to the JetRaw calibration file
     :type calibration_file: str, optional
-    :param identifier: The identifier for the images.
+    :param identifier: Camera identifier for the compression settings
     :type identifier: str, optional
-    :param verbose: Whether to print verbose output.
-    :type verbose: bool, optional
-    :param extension: Image file extension.
-    :type extension: str, optional
-    :param metadata: Whether to process metadata.
-    :type metadata: bool, optional
-    :param json: Whether to save metadata as JSON.
-    :type json: bool, optional
-    :param remove: Whether to delete original images.
-    :type remove: bool, optional
-    :param key: Licence key.
-    :type key: str, optional
-    :param ncores: Number of cores to use.
+    :param ncores: Number of CPU cores to use (0 for auto-detection)
     :type ncores: int, optional
+    :param omit_processed: Skip files that have already been processed
+    :type omit_processed: bool, optional
+    :param verbose: Enable detailed logging output
+    :type verbose: bool, optional
+    :raises FileNotFoundError: If the specified calibration file doesn't exist
     """
 
     def __init__(
@@ -46,6 +41,7 @@ class CompressionTool:
         omit_processed: bool = True,
         verbose: bool = False,
     ):
+        """:no-index:"""
         # Check if calibration file exists
         if calibration_file is not None and not os.path.exists(calibration_file):
             logger.error(
@@ -84,8 +80,10 @@ class CompressionTool:
 
     def remove_files(self, output_tiff_filename: str, input_filename: str) -> None:
         """
-        Remove files if the new file exists and its size is > 5% of the original.
+        Remove original file after successful compression.
 
+        Only removes if the compressed file exists and is at least 5% of the original size.
+        
         :param output_tiff_filename: The output TIFF filename.
         :param input_filename: The input filename.
         """
@@ -106,14 +104,14 @@ class CompressionTool:
         metadata_json: bool = True,
     ) -> bool:
         """
-        Compress an image.
+        Compress an image using JetRaw algorithm.
 
-        :param img_map: The image map.
-        :param target_file: The target file.
-        :param metadata: The metadata.
-        :param ome_bool: Whether to use OME metadata.
-        :param metadata_json: Whether to write metadata as JSON.
-        :return: Whether the operation was successful.
+        :param img_map: NumPy array containing the image data
+        :param target_file: Output path for the compressed file
+        :param metadata: Dictionary containing image metadata
+        :param ome_bool: Save metadata in OME format
+        :param metadata_json: Additionally save metadata as JSON
+        :return: True if compression was successful
         """
 
         # Prepare input image
@@ -149,14 +147,14 @@ class CompressionTool:
         metadata_json: bool = False,
     ) -> bool:
         """
-        Decompress an image.
+        Decompress a JetRaw image to standard TIFF.
 
-        :param img_map: The image map.
-        :param target_file: The target file.
-        :param metadata: The metadata.
-        :param ome_bool: Whether to use OME metadata.
-        :param metadata_json: Whether to write metadata as JSON.
-        :return: Whether the operation was successful.
+        :param img_map: NumPy array containing the image data
+        :param target_file: Output path for the decompressed file
+        :param metadata: Dictionary containing image metadata
+        :param ome_bool: Save metadata in OME format
+        :param metadata_json: Additionally save metadata as JSON
+        :return: True if decompression was successful
         """
 
         with tifffile.TiffWriter(target_file) as tif:
@@ -191,7 +189,9 @@ class CompressionTool:
         progress_info: tuple,
     ) -> int:
         """
-        Process an image file.
+        Process a single image for compression or decompression.
+
+        Worker function used by the parallel processing pool.
 
         :param folder_path: The path to the folder containing the image.
         :param output_folder: The path to the folder where the processed image will be saved.
@@ -274,7 +274,7 @@ class CompressionTool:
         target_folder: str = None,  # New parameter for target folder
     ) -> bool:
         """
-        Process a folder of images.
+        Process a folder of images using parallel processing.
 
         :param folder_path: The path to the folder.
         :param mode: The mode, either "compress" or "decompress".
