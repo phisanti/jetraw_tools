@@ -7,11 +7,12 @@ from .jetraw_tiff import JetrawTiff
 
 
 class TiffReader:
-    """TiffReader reads a JetRaw compressed TIFF file from disk.
+    """TiffReader reads a JetRaw compressed TIFF (.p.tiff or .p.tif) file from disk.
 
-    The goal of TiffReader is to load the TIFF file into a numpy array.
+    This class provides functionality to load TIFF files into numpy arrays with
+    support for reading specific pages or page ranges from multi-page TIFF files.
 
-    Any TiffWriter instance must be closed when finished, in order to
+    Any TiffReader instance must be closed when finished, in order to
     do that the user needs to use the method close(). If using the
     feature "with" this close() method is called automatically at the end.
 
@@ -42,20 +43,10 @@ class TiffReader:
         """
         return self
 
-    def __exit__(
-        self,
-        exc_type: Optional[type],
-        exc_value: Optional[Exception],
-        traceback: Optional[Any],
-    ) -> None:
+    def __exit__(self, *args) -> None:
         """Context manager exit.
-
-        :param exc_type: Exception type if an exception occurred
-        :type exc_type: Optional[type]
-        :param exc_value: Exception value if an exception occurred
-        :type exc_value: Optional[Exception]
-        :param traceback: Traceback if an exception occurred
-        :type traceback: Optional[Any]
+        
+        Automatically closes the TIFF file when exiting the context.
         """
         self.close()
 
@@ -180,13 +171,16 @@ def imread(
 def read_metadata(
     input_tiff_filename: str, ome: bool = False
 ) -> Union[Dict[str, Any], Any]:
-    """Read metadata from a TIFF file.
+    """Read image metadata from a TIFF file.
+
+    This function reads metadata from TIFF files that contain either OME-XML 
+    metadata or ImageJ metadata.
 
     :param input_tiff_filename: The path to the input TIFF file
     :type input_tiff_filename: str
-    :param ome: Whether to read OME metadata. Defaults to False
+    :param ome: Whether to read OME metadata (True) or ImageJ metadata (False). Defaults to False
     :type ome: bool
-    :returns: The metadata read from the TIFF file
+    :returns: The metadata read from the TIFF file - OME metadata as ome_types object or ImageJ metadata as dict
     :rtype: Union[Dict[str, Any], Any]
     """
 

@@ -9,16 +9,26 @@ from typing import Union, Optional, Any, Tuple
 
 
 class TiffWriter_5D:
-    """TiffWriter writes numpy array to a JetRaw compressed TIFF file.
+    """Writer for N-dimensional numpy arrays to JetRaw compressed TIFF files.
 
-    The goal of TiffWriter is to save the input numpy array/s to a JetRaw
-    compressed TIFF file in disk.
+    TiffWriter_5D provides a high-level interface for writing multi-dimensional
+    image data to disk using JetRaw compression. The class automatically handles
+    dimension adaptation, ensuring input arrays are properly formatted for the
+    underlying compression algorithm.
 
-    Any TiffWriter instance must be closed when finished, in order to
-    do that the user needs to use the method close(). If using the
-    feature "with" this close() method is called automatically at the end.
+    The writer supports arrays with up to 5 dimensions (T, C, Z, Y, X) and
+    automatically expands lower-dimensional inputs by adding singleton dimensions
+    as needed. All input data must be C-contiguous for optimal
+    compression performance.
 
-    Remember that TiffWriter instances are not thread-safe.
+    Examples:
+        Basic usage with context manager:
+        >>> with TiffWriter_5D('output.p.tiff') as writer:
+        ...     writer.write(image_array)
+
+        Writing multi-dimensional data:
+        >>> with TiffWriter_5D('stack.p.tiff', 'Time-lapse data') as writer:
+        ...     writer.write(timestack)  # Shape: (t, c, z, y, x)
     """
 
     def __init__(self, filepath: str, description: str = "") -> None:
@@ -52,21 +62,8 @@ class TiffWriter_5D:
         """
         return self
 
-    def __exit__(
-        self,
-        exc_type: Optional[type],
-        exc_value: Optional[Exception],
-        traceback: Optional[Any],
-    ) -> None:
-        """Context manager exit.
-
-        :param exc_type: Exception type if an exception occurred
-        :type exc_type: Optional[type]
-        :param exc_value: Exception value if an exception occurred
-        :type exc_value: Optional[Exception]
-        :param traceback: Traceback if an exception occurred
-        :type traceback: Optional[Any]
-        """
+    def __exit__(self) -> None:
+        """Context manager exit."""
         self.close()
 
     def close(self) -> None:
@@ -96,9 +93,9 @@ class TiffWriter_5D:
             raise ValueError(
                 "Input image array data must be contiguous. Please run np.ascontiguousarray(image_buffer) before prepare_images."
             )
-        if image_buffer.dtype != "uint16":
+        if not np.issubdtype(image_buffer.dtype, np.unsignedinteger):
             raise TypeError(
-                f"Input data {image_buffer.dtype} is not supported.Should be uint16."
+            f"Input data {image_buffer.dtype} is not supported. Should be an unsigned integer type (uint8, uint16, uint32, etc.)."
             )
 
         image_stack = self._check_and_adapt_input_image_5D(image_buffer)
@@ -142,9 +139,9 @@ class TiffWriter_5D:
 
         num_dimensions = np.ndim(image)
         if num_dimensions == expected_dimensions:
-            if image.dtype != "uint16":
+            if not np.issubdtype(image.dtype, np.unsignedinteger):
                 raise TypeError(
-                    f"Input data {image.dtype} is not supported.Should be uint16."
+                    f"Input data {image.dtype} is not supported. Should be an unsigned integer type (uint8, uint16, uint32, etc.)."
                 )
             if self.image_shape is None:
                 self.image_shape = image.shape[3:]
@@ -197,19 +194,29 @@ def metadata_writer(
     imagej: bool = False,
     as_json: bool = True,
 ) -> bool:
-    """Write metadata to the final image file.
+    """Write metadata to a TIFF file using various formats and export options.
 
-    :param output_tiff_filename: The output TIFF filename
+    This function provides flexible metadata writing capabilities for TIFF files,
+    supporting multiple metadata standards and export formats. It can embed metadata
+    directly into the TIFF file following OME-XML or ImageJ conventions, and
+    optionally export the metadata as a separate JSON file for external use.
+
+    The function handles three main metadata workflows:
+    - OME-XML format: Embeds structured metadata following OME-TIFF specification
+    - ImageJ format: Flattens metadata for ImageJ compatibility
+    - JSON export: Creates a human-readable JSON file alongside the TIFF
+
+    :param output_tiff_filename: The output TIFF filename where metadata will be embedded
     :type output_tiff_filename: str
-    :param metadata: The metadata to write, defaults to None
+    :param metadata: The metadata to write, either as OME object or dictionary, defaults to None
     :type metadata: Union[ome_types.OME, dict]
-    :param ome_bool: Whether to use OME metadata, defaults to True
+    :param ome_bool: Whether to embed metadata using OME-XML format in TIFF comments, defaults to True
     :type ome_bool: bool
-    :param imagej: Whether to use ImageJ metadata, defaults to False
+    :param imagej: Whether to embed flattened metadata for ImageJ compatibility, defaults to False
     :type imagej: bool
-    :param as_json: Whether to write metadata as JSON, defaults to True
+    :param as_json: Whether to export metadata as a separate JSON file, defaults to True
     :type as_json: bool
-    :returns: Whether the operation was successful
+    :returns: True if the metadata writing operation was successful
     :rtype: bool
     """
 
