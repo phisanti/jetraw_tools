@@ -1,9 +1,29 @@
+# Python cache and compiled files
 src/jetraw_tools/__pycache__/*
 src/jetraw_tools/jetraw_tools.egg-info/*
 src/jetraw_tools.egg-info/*
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Build directories (keep general build exclusion)
 build/*
+*.egg-info/
+
+# Documentation build artifacts (Sphinx)
+docs/build/
+docs/source/generated/
+docs/source/_build/
+
+# Test directories
 test/*
 test2/*
 tests/*
+
+# OS and IDE files
 .DS_Store
+.vscode/
+
+# Project specific
 SOP.md

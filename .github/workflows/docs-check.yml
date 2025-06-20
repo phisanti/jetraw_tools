@@ -1,0 +1,60 @@
+name: Documentation Build Check
+
+on:
+  pull_request:
+    branches: master
+    paths:
+      - 'docs/**'
+      - 'src/**'
+      - '.readthedocs.yaml'
+      - 'pyproject.toml'
+      - 'requirements.txt'
+
+jobs:
+  test-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install package dependencies if they exist
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+          fi
+          # Install documentation dependencies
+          pip install -r docs/requirements.txt
+          # Install package in development mode
+          pip install -e .
+      
+      - name: Verify installation
+        run: |
+          python -c "import jetraw_tools; print(f'✅ jetraw_tools {jetraw_tools.__version__} installed')"
+          python -c "import sphinx; print(f'✅ Sphinx {sphinx.__version__} installed')"
+      
+      - name: Test documentation build
+        run: |
+          cd docs
+          sphinx-build -b html source build/html -W --keep-going
+          echo "✅ Documentation builds successfully!"
+      
+      - name: Verify output
+        run: |
+          if [ ! -f "docs/build/html/index.html" ]; then
+            echo "❌ ERROR: index.html not found!"
+            exit 1
+          fi
+          echo "✅ Documentation index.html created successfully!"
+      
+      - name: Check for broken internal links (optional)
+        run: |
+          cd docs
+          sphinx-build -b linkcheck source build/linkcheck || echo "⚠️ Some links may be broken (check logs)"

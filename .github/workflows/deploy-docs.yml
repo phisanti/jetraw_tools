@@ -1,0 +1,75 @@
+name: Deploy jetraw_tools Documentation
+
+on:
+  push:
+    branches: master
+    paths:
+      - 'docs/**'
+      - 'src/**'
+      - '.readthedocs.yaml'
+      - 'pyproject.toml'
+      - 'requirements.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: 'pip'
+      
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install package dependencies first
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+          fi
+          # Install documentation dependencies
+          pip install -r docs/requirements.txt
+          # Install package in development mode
+          pip install -e .
+      
+      - name: Verify jetraw_tools installation
+        run: |
+          python -c "import jetraw_tools; print(f'jetraw_tools version: {jetraw_tools.__version__}')"
+      
+      - name: Build Sphinx documentation
+        run: |
+          cd docs
+          # Clean previous builds
+          if [ -d "build" ]; then rm -rf build; fi
+          # Build using sphinx-build directly (more reliable than make)
+          sphinx-build -b html source build/html -W --keep-going
+      
+      - name: Verify build output
+        run: |
+          ls -la docs/build/html/
+          if [ ! -f "docs/build/html/index.html" ]; then
+            echo "ERROR: index.html not found!"
+            exit 1
+          fi
+          echo "✅ Documentation built successfully!"
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/build/html
+          force_orphan: true

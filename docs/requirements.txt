@@ -1,0 +1,10 @@
+sphinx>=4.0
+sphinx-rtd-theme
+sphinx-autodoc-typehints
+furo
+
+tifffile
+nd2
+typer
+ome_types
+
