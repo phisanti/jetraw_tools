@@ -32,7 +32,7 @@ html_static_path = ["_static"]
 autodoc_typehints = "description"
 autodoc_class_signature = "separated"
 autodoc_mock_imports = ["dpcore"]
-autoclass_content = 'class'
+autoclass_content = 'both'
 autosummary_generate = True
 
 # Warning suppression
@@ -44,5 +44,5 @@ autodoc_default_options = {
     "members": True,
     "undoc-members": True,
     "show-inheritance": True,
-    "special-members": "__init__",
+    "exclude-members": "__init__",
 }
