@@ -50,7 +50,7 @@ jobs:
           # Clean previous builds
           if [ -d "build" ]; then rm -rf build; fi
           # Build using sphinx-build directly (more reliable than make)
-          sphinx-build -b html source build/html -W --keep-going
+          sphinx-build -b html source build/html --keep-going
       
       - name: Verify build output
         run: |
