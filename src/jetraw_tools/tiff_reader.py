@@ -45,7 +45,7 @@ class TiffReader:
 
     def __exit__(self, *args) -> None:
         """Context manager exit.
-        
+
         Automatically closes the TIFF file when exiting the context.
         """
         self.close()
@@ -173,7 +173,7 @@ def read_metadata(
 ) -> Union[Dict[str, Any], Any]:
     """Read image metadata from a TIFF file.
 
-    This function reads metadata from TIFF files that contain either OME-XML 
+    This function reads metadata from TIFF files that contain either OME-XML
     metadata or ImageJ metadata.
 
     :param input_tiff_filename: The path to the input TIFF file

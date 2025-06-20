@@ -50,7 +50,7 @@ def add_extension(
 
 def create_compress_folder(folder_path: str, suffix: str = "_compressed") -> str:
     """Create a folder for compressed images.
-    
+
     :param folder_path: The path to the folder with the source images.
     :param suffix: The suffix to append to the compressed folder name.
         Default is "_compressed".

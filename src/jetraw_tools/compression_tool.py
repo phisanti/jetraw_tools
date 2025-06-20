@@ -83,7 +83,7 @@ class CompressionTool:
         Remove original file after successful compression.
 
         Only removes if the compressed file exists and is at least 5% of the original size.
-        
+
         :param output_tiff_filename: The output TIFF filename.
         :param input_filename: The input filename.
         """

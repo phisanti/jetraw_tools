@@ -95,7 +95,7 @@ class TiffWriter_5D:
             )
         if not np.issubdtype(image_buffer.dtype, np.unsignedinteger):
             raise TypeError(
-            f"Input data {image_buffer.dtype} is not supported. Should be an unsigned integer type (uint8, uint16, uint32, etc.)."
+                f"Input data {image_buffer.dtype} is not supported. Should be an unsigned integer type (uint8, uint16, uint32, etc.)."
             )
 
         image_stack = self._check_and_adapt_input_image_5D(image_buffer)
