@@ -19,7 +19,7 @@ from rich.console import Console
 from jetraw_tools import jetraw_tiff
 from jetraw_tools.compression_tool import CompressionTool
 from jetraw_tools.config import ConfigManager, init as config_init
-from jetraw_tools.logger import setup_logger
+from jetraw_tools.logger import logger, setup_logger
 
 app = typer.Typer(
     name="jetraw_tools",
@@ -147,7 +147,7 @@ def decompress(
 @app.command()
 def settings() -> None:
     """Run configuration setup wizard."""
-    logger = setup_logger(level=logging.INFO)
+    setup_logger(level=logging.INFO)
     logger.info("Starting configuration setup...")
     try:
         config_init(force=False)
@@ -207,7 +207,7 @@ def _process_files(
 
     # Setup logging
     log_level = logging.DEBUG if verbose else logging.INFO
-    logger = setup_logger(level=log_level)
+    setup_logger(level=log_level)
 
     # Load existing configuration
     config_manager = ConfigManager()

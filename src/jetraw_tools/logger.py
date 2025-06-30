@@ -1,5 +1,6 @@
 import sys
 import logging
+from rich.logging import RichHandler
 
 
 def setup_logger(
@@ -18,14 +19,17 @@ def setup_logger(
 
     logger = logging.getLogger(name)
     logger.setLevel(level)
+    logger.propagate = False
 
     # Avoid adding handlers if they already exist
     if not logger.handlers:
-        handler = logging.StreamHandler(sys.stdout)
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        handler = RichHandler(
+            show_time=True,
+            show_level=True,
+            show_path=False,
+            rich_tracebacks=True,
+            markup=True,
         )
-        handler.setFormatter(formatter)
         logger.addHandler(handler)
 
     return logger
