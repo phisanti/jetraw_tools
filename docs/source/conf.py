@@ -32,7 +32,7 @@ html_static_path = ["_static"]
 autodoc_typehints = "description"
 autodoc_class_signature = "separated"
 autodoc_mock_imports = ["dpcore"]
-autoclass_content = 'both'
+autoclass_content = "both"
 autosummary_generate = True
 
 # Warning suppression

@@ -317,4 +317,3 @@ def main_callback(
 ) -> None:
     """JetRaw compression tools for image processing."""
     pass
-

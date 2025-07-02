@@ -7,6 +7,7 @@ from ome_types.model import MapAnnotation, Map
 from ome_types.model.map import M
 from .dpcore import prepare_image
 
+
 def cores_validation(ncores: int) -> tuple[str, int, str]:
     """
     Validates the number of cores requested.

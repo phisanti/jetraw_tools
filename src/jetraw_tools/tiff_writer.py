@@ -63,10 +63,10 @@ class TiffWriter_5D:
         return self
 
     def __exit__(
-        self, 
-        exc_type: Optional[type], 
-        exc_value: Optional[BaseException], 
-        traceback: Optional[Any]
+        self,
+        exc_type: Optional[type],
+        exc_value: Optional[BaseException],
+        traceback: Optional[Any],
     ) -> None:
         """Context manager exit."""
         self.close()
