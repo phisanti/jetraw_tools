@@ -1,0 +1,28 @@
+﻿jetraw\_tools.compression\_tool.CompressionTool
+===============================================
+
+.. currentmodule:: jetraw_tools.compression_tool
+
+.. autoclass:: CompressionTool
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~CompressionTool.__init__
+      ~CompressionTool.compress_image
+      ~CompressionTool.decompress_image
+      ~CompressionTool.list_files
+      ~CompressionTool.process_folder
+      ~CompressionTool.process_image
+      ~CompressionTool.remove_files
+   
+   
+
+   
+   
+   
