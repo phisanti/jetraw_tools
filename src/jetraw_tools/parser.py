@@ -10,7 +10,6 @@ import re
 import logging
 import configparser
 from typing import Optional
-from pathlib import Path
 
 import typer
 from rich.console import Console
@@ -20,6 +19,7 @@ from jetraw_tools import jetraw_tiff
 from jetraw_tools.compression_tool import CompressionTool
 from jetraw_tools.config import ConfigManager, init as config_init
 from jetraw_tools.logger import logger, setup_logger
+from jetraw_tools.utils import cores_validation
 
 app = typer.Typer(
     name="jetraw_tools",
@@ -274,6 +274,17 @@ def _process_files(
         logger.error("Identifier and calibration file must be set.")
         raise typer.Exit(1)
 
+    status, validated_ncores, message = cores_validation(ncores)
+    if status == "ERROR":
+        logger.error(message)
+        raise typer.Exit(1)
+    elif status == "WARN":
+        logger.warning(message)
+    else:  # status == 'OK'
+        logger.info(message)
+
+    ncores = validated_ncores
+
     full_path = os.path.join(os.getcwd(), path)
 
     logger.info(f"Jetraw_tools package version: {__version__}")
@@ -306,3 +317,4 @@ def main_callback(
 ) -> None:
     """JetRaw compression tools for image processing."""
     pass
+

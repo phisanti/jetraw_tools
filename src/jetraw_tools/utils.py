@@ -2,9 +2,47 @@ import os
 import numpy as np
 import tifffile
 import locale
+import multiprocessing
 from ome_types.model import MapAnnotation, Map
 from ome_types.model.map import M
 from .dpcore import prepare_image
+
+def cores_validation(ncores: int) -> tuple[str, int, str]:
+    """
+    Validates the number of cores requested.
+
+    :param ncores: The number of cores requested by the user.
+    :type ncores: int
+    :return: A tuple containing a status ('OK', 'WARN', 'ERROR'),
+             the number of cores to use, and a message.
+    :rtype: tuple[str, int, str]
+    """
+    logical_cores = multiprocessing.cpu_count()
+    # Set a threshold for a fatal error (e.g., more than double the logical cores)
+    error_threshold = logical_cores * 2
+
+    if ncores > error_threshold:
+        message = (
+            f"Requested {ncores} cores, which is more than double the available {logical_cores} "
+            f"logical cores. This is highly likely to cause system instability. Aborting."
+        )
+        return "ERROR", ncores, message
+
+    if ncores > logical_cores:
+        message = (
+            f"Warning: Requested {ncores} cores, but the system only has {logical_cores} logical cores. "
+            "This may lead to performance degradation due to context switching."
+        )
+        return "WARN", ncores, message
+
+    if ncores == 0:
+        validated_ncores = max(1, logical_cores - 1)
+        message = f"Automatically selected {validated_ncores} cores for processing."
+        return "OK", validated_ncores, message
+
+    # This case covers ncores > 0 and <= logical_cores
+    message = f"Using {ncores} cores for processing."
+    return "OK", ncores, message
 
 
 def setup_locale():
