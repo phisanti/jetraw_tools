@@ -308,9 +308,11 @@ class CompressionTool:
         removed_count = 0
         if self.omit_processed:
             processed_files = set()
-            for file in os.listdir(output_folder):
-                base_name, _ = os.path.splitext(file)
-                processed_files.add(base_name)
+            # Only list directory contents if output_folder is actually a directory
+            if os.path.isdir(output_folder):
+                for file in os.listdir(output_folder):
+                    base_name, _ = os.path.splitext(file)
+                    processed_files.add(base_name)
 
             original_count = len(image_files)
             image_files = [
