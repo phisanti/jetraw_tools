@@ -1,12 +1,22 @@
 import ctypes
 import ctypes.util
 import functools
-from typing import Callable, Any
+from typing import Callable
 import numpy as np
 from .libs import (
-    _load_libraries,
     _adapt_path_to_os,
+    get_dpcore_libs,
+    JetrawLibraryError,
 )
+
+
+def _get_libs():
+    """Get the loaded DPCore libraries.
+
+    :returns: Tuple of (jetraw_lib, dpcore_lib)
+    :raises JetrawLibraryError: If libraries are not available
+    """
+    return get_dpcore_libs()
 
 
 def dp_status_as_exception(func: Callable[..., int]) -> Callable[..., None]:
@@ -26,25 +36,11 @@ def dp_status_as_exception(func: Callable[..., int]) -> Callable[..., None]:
     def wrapper(*args, **kwargs):
         dp_status = func(*args, **kwargs)
         if dp_status != 0:
+            _jetraw_lib, _ = _get_libs()
             message = _jetraw_lib.dp_status_description(dp_status).decode("utf-8")
             raise RuntimeError(message)
 
     return wrapper
-
-
-# Initialize module
-try:
-    _jetraw_lib, _dpcore_lib = _load_libraries(lib="dpcore")
-except (ImportError, AttributeError, OSError) as e:
-    _jetraw_lib = None
-    _dpcore_lib = None
-
-try:
-    _dpcore_lib.dpcore_init()
-except (RuntimeError, AttributeError) as e:
-    import warnings
-
-    warnings.warn(f"DPCore C libraries could not be loaded: {e}")
 
 
 def set_loglevel(level: str) -> None:
@@ -58,6 +54,7 @@ def set_loglevel(level: str) -> None:
     if level.upper() not in levels:
         raise ValueError("Log level has to be one of " + str(levels))
 
+    _, _dpcore_lib = _get_libs()
     idx = levels.index(level.upper())
     _dpcore_lib.dpcore_set_loglevel(idx)
 
@@ -71,6 +68,7 @@ def set_logfile(path: str) -> int:
     :returns: DPCore status code
     :rtype: int
     """
+    _, _dpcore_lib = _get_libs()
     cpath = _adapt_path_to_os(path)
     return _dpcore_lib.dpcore_set_logfile(cpath)
 
@@ -84,6 +82,7 @@ def load_parameters(path: str) -> int:
     :returns: DPCore status code
     :rtype: int
     """
+    _, _dpcore_lib = _get_libs()
     cpath = _adapt_path_to_os(path)
     return _dpcore_lib.dpcore_load_parameters(cpath)
 
@@ -101,6 +100,7 @@ def prepare_image(image: np.ndarray, identifier: str, error_bound: int = 1) -> i
     :returns: DPCore status code
     :rtype: int
     """
+    _, _dpcore_lib = _get_libs()
     return _dpcore_lib.dpcore_prepare_image(
         image.ctypes.data_as(ctypes.POINTER(ctypes.c_ushort)),
         image.size,
@@ -122,6 +122,7 @@ def embed_meta(image: np.ndarray, identifier: str, error_bound: int = 1) -> int:
     :returns: DPCore status code
     :rtype: int
     """
+    _, _dpcore_lib = _get_libs()
     return _dpcore_lib.dpcore_embed_meta(
         image.ctypes.data_as(ctypes.POINTER(ctypes.c_ushort)),
         image.size,

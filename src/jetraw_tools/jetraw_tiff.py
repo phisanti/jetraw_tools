@@ -4,10 +4,20 @@ import ctypes.util
 import functools
 from typing import Callable, Optional
 from .libs import (
-    _load_libraries,
     _adapt_path_to_os,
     _dptiff_ptr,
+    get_jetraw_libs,
+    JetrawLibraryError,
 )
+
+
+def _get_libs():
+    """Get the loaded JetRaw TIFF libraries.
+
+    :returns: Tuple of (jetraw_lib, jetraw_tiff_lib)
+    :raises JetrawLibraryError: If libraries are not available
+    """
+    return get_jetraw_libs()
 
 
 def dp_status_as_exception(func: Callable[..., int]) -> Callable[..., None]:
@@ -27,6 +37,7 @@ def dp_status_as_exception(func: Callable[..., int]) -> Callable[..., None]:
     def wrapper(*args, **kwargs):
         dp_status = func(*args, **kwargs)
         if dp_status != 0:
+            _jetraw_lib, _ = _get_libs()
             message = _jetraw_lib.dp_status_description(dp_status).decode("utf-8")
             raise RuntimeError(message)
 
@@ -40,7 +51,10 @@ class JetrawTiff:
         """Initialize a new JetrawTiff instance.
 
         Creates a new TIFF handle for Jetraw operations.
+        :raises JetrawLibraryError: If JetRaw libraries are not available
         """
+        # This will raise JetrawLibraryError if libraries aren't available
+        _get_libs()
         self._handle = _dptiff_ptr()
         self._href = ctypes.byref(self._handle)
 
@@ -51,6 +65,7 @@ class JetrawTiff:
         :returns: Image width in pixels
         :rtype: int
         """
+        _, _jetraw_tiff_lib = _get_libs()
         return _jetraw_tiff_lib.jetraw_tiff_get_width(self._handle)
 
     @property
@@ -60,6 +75,7 @@ class JetrawTiff:
         :returns: Image height in pixels
         :rtype: int
         """
+        _, _jetraw_tiff_lib = _get_libs()
         return _jetraw_tiff_lib.jetraw_tiff_get_height(self._handle)
 
     @property
@@ -69,6 +85,7 @@ class JetrawTiff:
         :returns: Number of pages
         :rtype: int
         """
+        _, _jetraw_tiff_lib = _get_libs()
         return _jetraw_tiff_lib.jetraw_tiff_get_pages(self._handle)
 
     @dp_status_as_exception
@@ -95,7 +112,7 @@ class JetrawTiff:
         :returns: DPCore status code
         :rtype: int
         """
-
+        _, _jetraw_tiff_lib = _get_libs()
         cpath = _adapt_path_to_os(path)
         cdescr = bytes(description, "UTF-8")
         cmode = bytes(mode, "UTF-8")
@@ -112,7 +129,7 @@ class JetrawTiff:
         :returns: DPCore status code
         :rtype: int
         """
-
+        _, _jetraw_tiff_lib = _get_libs()
         bufptr = image.ctypes.data_as(ctypes.POINTER(ctypes.c_ushort))
         return _jetraw_tiff_lib.jetraw_tiff_append(self._handle, bufptr)
 
@@ -129,6 +146,7 @@ class JetrawTiff:
         :returns: DPCore status code
         :rtype: int
         """
+        _, _jetraw_tiff_lib = _get_libs()
         return _jetraw_tiff_lib.jetraw_tiff_read_page(self._handle, bufptr, pageidx)
 
     def read_page(self, pageidx: int) -> np.ndarray:
@@ -151,20 +169,5 @@ class JetrawTiff:
         :returns: DPCore status code
         :rtype: int
         """
+        _, _jetraw_tiff_lib = _get_libs()
         return _jetraw_tiff_lib.jetraw_tiff_close(self._href)
-
-
-# Initialize module
-try:
-    _jetraw_lib, _jetraw_tiff_lib = _load_libraries(lib="jetraw")
-except (ImportError, AttributeError, OSError) as e:
-    _jetraw_lib = None
-    _jetraw_tiff_lib = None
-
-try:
-    dp_status_as_exception(_jetraw_tiff_lib.jetraw_tiff_init)()
-except (RuntimeError, AttributeError) as e:
-    import warnings
-
-    # Change error for warning
-    warnings.warn(f"Jetraw C libraries could not be loaded: {e}")

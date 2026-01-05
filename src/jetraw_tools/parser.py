@@ -14,8 +14,7 @@ from typing import Optional
 import typer
 from rich.console import Console
 
-# Local package imports
-from jetraw_tools import jetraw_tiff
+# Local package imports - lazy import jetraw_tiff only when needed
 from jetraw_tools.compression_tool import CompressionTool
 from jetraw_tools.config import ConfigManager, init as config_init
 from jetraw_tools.logger import logger, setup_logger
@@ -262,12 +261,14 @@ def _process_files(
     else:
         licence_key = key
 
-    # Set license in jetraw library
+    # Set license in jetraw library (lazy import)
     try:
-        jetraw_tiff._jetraw_tiff_lib.jetraw_tiff_set_license(
-            licence_key.encode("utf-8")
-        )
-    except AttributeError:
+        from jetraw_tools.libs import get_jetraw_libs
+
+        _, _jetraw_tiff_lib = get_jetraw_libs()
+        _jetraw_tiff_lib.jetraw_tiff_set_license(licence_key.encode("utf-8"))
+    except (ImportError, AttributeError):
+        # Libraries not available or license setting not supported
         pass
 
     if identifier == "" or cal_file == "":

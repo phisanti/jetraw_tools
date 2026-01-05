@@ -189,13 +189,15 @@ class PathDetector:
         Find binary installation path using system commands.
 
         Uses system 'which' or 'where' commands to locate the binary
-        and returns the installation directory.
+        and returns the installation directory. If not found in PATH,
+        searches common installation locations.
 
         :param binary_name: Name of the binary to search for.
         :type binary_name: str
         :return: Path to the installation directory if found, None otherwise.
         :rtype: Optional[Path]
         """
+        # First try using system PATH
         cmd: str = "where" if platform.system() == "Windows" else "which"
 
         try:
@@ -210,14 +212,45 @@ class PathDetector:
             if result.returncode == 0 and result.stdout.strip():
                 binary_path: Path = Path(result.stdout.strip().split("\n")[0])
                 # Return installation directory (parent of bin directory)
-                return (
+                install_path = (
                     binary_path.parent.parent
                     if binary_path.parent.name == "bin"
                     else binary_path.parent
                 )
+                # Validate before returning
+                if PathDetector.validate_installation_path(install_path, binary_name):
+                    return install_path
 
         except (subprocess.SubprocessError, subprocess.TimeoutExpired):
             pass
+
+        # If not found in PATH, search common installation locations
+        common_paths: List[Path] = []
+
+        if platform.system() == "Darwin":  # macOS
+            common_paths = [
+                Path("/Applications/Jetraw UI.app/Contents/jetraw"),
+                Path("/Applications/Jetraw.app/Contents/jetraw"),
+                Path("/usr/local/jetraw"),
+                Path("/opt/jetraw"),
+            ]
+        elif platform.system() == "Windows":
+            common_paths = [
+                Path("C:/Program Files/Jetraw"),
+                Path("C:/Program Files (x86)/Jetraw"),
+                Path("C:/Jetraw"),
+            ]
+        else:  # Linux
+            common_paths = [
+                Path("/usr/local/jetraw"),
+                Path("/opt/jetraw"),
+                Path(f"{Path.home()}/jetraw"),
+            ]
+
+        # Search common locations
+        for path in common_paths:
+            if PathDetector.validate_installation_path(path, binary_name):
+                return path
 
         return None
 

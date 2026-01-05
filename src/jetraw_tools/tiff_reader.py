@@ -4,6 +4,7 @@ import ome_types
 import ctypes
 from typing import Optional, Union, List, Tuple, Any, Dict
 from .jetraw_tiff import JetrawTiff
+from .libs import JetrawLibraryError
 
 
 class TiffReader:
@@ -24,7 +25,9 @@ class TiffReader:
 
         :param filepath: File name for TIFF file to be opened
         :type filepath: str
+        :raises JetrawLibraryError: If JetRaw libraries are not available
         """
+        self._jrtif = None  # Initialize to None for safe cleanup in __del__
         self._jrtif = JetrawTiff()
         self._jrtif.open(filepath, "r")
 

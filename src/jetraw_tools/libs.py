@@ -1,9 +1,19 @@
 import configparser
 import ctypes
+import ctypes.util
 import os
 from pathlib import Path
 from sys import platform as _platform
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
+
+# Cache for loaded libraries
+_libs_cache: dict = {}
+
+
+class JetrawLibraryError(ImportError):
+    """Raised when JetRaw/DPCore libraries cannot be loaded."""
+
+    pass
 
 
 class _DPTiffStruct(ctypes.Structure):
@@ -262,3 +272,75 @@ def _load_libraries(lib: str) -> Tuple[ctypes.CDLL, ctypes.CDLL]:
         _jetraw_tiff_lib.jetraw_tiff_get_pages.restype = ctypes.c_int
 
         return _jetraw_lib, _jetraw_tiff_lib
+
+
+def get_dpcore_libs() -> Tuple[ctypes.CDLL, ctypes.CDLL]:
+    """Lazy load DPCore libraries with caching.
+
+    :returns: Tuple of (jetraw_lib, dpcore_lib)
+    :rtype: Tuple[ctypes.CDLL, ctypes.CDLL]
+    :raises JetrawLibraryError: If libraries cannot be loaded
+    """
+    if "dpcore" not in _libs_cache:
+        try:
+            _jetraw_lib, _dpcore_lib = _load_libraries(lib="dpcore")
+            _dpcore_lib.dpcore_init()
+            _libs_cache["dpcore"] = (_jetraw_lib, _dpcore_lib)
+        except (ImportError, AttributeError, OSError) as e:
+            raise JetrawLibraryError(
+                f"DPCore/JetRaw C libraries could not be loaded. "
+                f"Please ensure JetRaw is installed and run 'jetraw-tools settings' "
+                f"to configure library paths. Error: {e}"
+            ) from e
+    return _libs_cache["dpcore"]
+
+
+def get_jetraw_libs() -> Tuple[ctypes.CDLL, ctypes.CDLL]:
+    """Lazy load JetRaw TIFF libraries with caching.
+
+    :returns: Tuple of (jetraw_lib, jetraw_tiff_lib)
+    :rtype: Tuple[ctypes.CDLL, ctypes.CDLL]
+    :raises JetrawLibraryError: If libraries cannot be loaded
+    """
+    if "jetraw" not in _libs_cache:
+        try:
+            _jetraw_lib, _jetraw_tiff_lib = _load_libraries(lib="jetraw")
+            # Initialize jetraw_tiff
+            status = _jetraw_tiff_lib.jetraw_tiff_init()
+            if status != 0:
+                message = _jetraw_lib.dp_status_description(status).decode("utf-8")
+                raise RuntimeError(f"jetraw_tiff_init failed: {message}")
+            _libs_cache["jetraw"] = (_jetraw_lib, _jetraw_tiff_lib)
+        except (ImportError, AttributeError, OSError, RuntimeError) as e:
+            raise JetrawLibraryError(
+                f"JetRaw C libraries could not be loaded. "
+                f"Please ensure JetRaw is installed and run 'jetraw-tools settings' "
+                f"to configure library paths. Error: {e}"
+            ) from e
+    return _libs_cache["jetraw"]
+
+
+def is_jetraw_available() -> bool:
+    """Check if JetRaw libraries are available without raising an error.
+
+    :returns: True if JetRaw libraries can be loaded, False otherwise
+    :rtype: bool
+    """
+    try:
+        get_jetraw_libs()
+        return True
+    except JetrawLibraryError:
+        return False
+
+
+def is_dpcore_available() -> bool:
+    """Check if DPCore libraries are available without raising an error.
+
+    :returns: True if DPCore libraries can be loaded, False otherwise
+    :rtype: bool
+    """
+    try:
+        get_dpcore_libs()
+        return True
+    except JetrawLibraryError:
+        return False
