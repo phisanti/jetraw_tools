@@ -4,12 +4,13 @@ JetRaw Tools Configuration Manager
 Configuration tool for setting up JetRaw Tools.
 """
 
+import re
 import shutil
 import platform
 import subprocess
 import configparser
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 from datetime import datetime
 
 import typer
@@ -34,6 +35,7 @@ VALID_DAT_EXTENSIONS: List[str] = [".dat"]
 REQUIRED_SECTIONS: List[str] = [
     "calibration_file",
     "identifiers",
+    "calibration_mapping",
     "licence_key",
     "jetraw_paths",
 ]
@@ -361,8 +363,8 @@ def init(
 
     try:
         # Run configuration steps
-        _configure_calibration(config_manager)
-        _configure_identifiers(config_manager)
+        cal_file_count = _configure_calibration(config_manager)
+        _configure_identifiers(config_manager, cal_file_count)
         _configure_license_key(config_manager)
         _configure_paths(config_manager)
 
@@ -561,12 +563,34 @@ def validate() -> None:
 
     issues: List[str] = []
 
-    # Check calibration file
-    cal_section: Dict[str, str] = config_manager.get_section_dict("calibration_file")
-    if not cal_section.get("calibration_file"):
-        issues.append("Missing calibration file")
-    elif not Path(cal_section["calibration_file"]).exists():
-        issues.append("Calibration file does not exist")
+    # Check calibration files (supports both single and multiple)
+    cal_files = _get_calibration_file_list(config_manager)
+    if not cal_files:
+        issues.append("No calibration file configured")
+    else:
+        for key, path in cal_files:
+            if not Path(path).exists():
+                issues.append(f"Calibration file does not exist: {key} → {path}")
+
+    # Check identifiers
+    identifiers_section: Dict[str, str] = config_manager.get_section_dict("identifiers")
+    if not identifiers_section:
+        issues.append("No identifiers configured")
+
+    # Check calibration mappings (if multiple calibration files)
+    if len(cal_files) > 1:
+        mapping_section: Dict[str, str] = config_manager.get_section_dict(
+            "calibration_mapping"
+        )
+        cal_keys = {key for key, _ in cal_files}
+
+        for id_key in identifiers_section.keys():
+            if id_key not in mapping_section:
+                issues.append(f"Identifier '{id_key}' has no calibration mapping")
+            elif mapping_section[id_key] not in cal_keys:
+                issues.append(
+                    f"Identifier '{id_key}' maps to unknown calibration '{mapping_section[id_key]}'"
+                )
 
     # Check license key
     license_section: Dict[str, str] = config_manager.get_section_dict("licence_key")
@@ -594,56 +618,210 @@ def validate() -> None:
 # Helper functions for configuration steps
 
 
-def _configure_calibration(config_manager: ConfigManager) -> None:
+def _get_calibration_file_list(config_manager: ConfigManager) -> List[tuple]:
     """
-    Configure calibration file interactively.
+    Get list of calibration files from configuration.
 
-    Guides the user through setting up the calibration file, including
-    checking for existing files and copying the file to the config directory.
+    Extracts all calibration files from the config, handling both legacy
+    (single calibration_file) and new (numbered calibration_file1, etc.) formats.
+
+    :param config_manager: ConfigManager instance to query.
+    :type config_manager: ConfigManager
+    :return: List of tuples (key, path) for each calibration file.
+    :rtype: List[tuple]
+    """
+    cal_files: List[tuple] = []
+    cal_section = config_manager.get_section_dict("calibration_file")
+
+    if not cal_section:
+        return cal_files
+
+    # Sort keys to ensure consistent ordering (calibration_file before calibration_file1, etc.)
+    for key in sorted(cal_section.keys()):
+        if key == "calibration_file" or re.match(r"^calibration_file\d+$", key):
+            cal_files.append((key, cal_section[key]))
+
+    return cal_files
+
+
+def _migrate_to_numbered_format(config_manager: ConfigManager) -> None:
+    """
+    Migrate single calibration file to numbered format.
+
+    Converts legacy 'calibration_file' key to 'calibration_file1' format
+    when adding a second calibration file.
 
     :param config_manager: ConfigManager instance to update.
     :type config_manager: ConfigManager
     :rtype: None
     """
+    cal_section = config_manager.get_section_dict("calibration_file")
+
+    if "calibration_file" in cal_section and "calibration_file1" not in cal_section:
+        # Store the old value
+        old_value = cal_section["calibration_file"]
+        # Remove old key
+        del config_manager.config["calibration_file"]["calibration_file"]
+        # Add as calibration_file1
+        config_manager.set_section_value(
+            "calibration_file", "calibration_file1", old_value
+        )
+        console.print(
+            "[blue]ℹ️  Migrated configuration to multi-calibration format[/blue]"
+        )
+
+        # Update calibration_mapping if it exists and references old key
+        if "calibration_mapping" in config_manager.config:
+            mapping_section = dict(config_manager.config["calibration_mapping"])
+            for id_key, cal_key in mapping_section.items():
+                if cal_key == "calibration_file":
+                    config_manager.config["calibration_mapping"][id_key] = (
+                        "calibration_file1"
+                    )
+
+
+def _set_calibration_file_numbered(
+    config_manager: ConfigManager, file_path: Path, current_count: int
+) -> None:
+    """
+    Validate and set calibration file with numbered key.
+
+    Validates the calibration file, copies it to the config directory,
+    and handles migration to numbered format when needed.
+
+    :param config_manager: ConfigManager instance to update.
+    :type config_manager: ConfigManager
+    :param file_path: Path to the calibration file.
+    :type file_path: Path
+    :param current_count: Current number of calibration files (0-indexed).
+    :type current_count: int
+    :raises ConfigError: If the file doesn't exist, has wrong extension, or cannot be copied.
+    :rtype: None
+    """
+    if not file_path.exists():
+        raise ConfigError(f"Calibration file does not exist: {file_path}")
+
+    if file_path.suffix not in VALID_DAT_EXTENSIONS:
+        raise ConfigError(
+            f"Calibration file must have extension: {VALID_DAT_EXTENSIONS}"
+        )
+
+    # Check for duplicates
+    existing_files = _get_calibration_file_list(config_manager)
+    for _, existing_path in existing_files:
+        if Path(existing_path).resolve() == file_path.resolve():
+            raise ConfigError(f"Calibration file already configured: {file_path.name}")
+        if Path(existing_path).name == file_path.name:
+            raise ConfigError(
+                f"A calibration file with name '{file_path.name}' already exists"
+            )
+
+    # Copy file to config directory
+    dest_path: Path = CONFIG_DIR / file_path.name
+    try:
+        shutil.copy2(file_path, dest_path)
+    except Exception as e:
+        raise ConfigError(f"Failed to copy calibration file: {e}")
+
+    # Determine the key to use
+    if current_count == 0:
+        # First file: use legacy format for backward compatibility
+        key = "calibration_file"
+    else:
+        # Migrate if we're adding a second file and legacy format exists
+        if current_count == 1:
+            _migrate_to_numbered_format(config_manager)
+        key = f"calibration_file{current_count + 1}"
+
+    config_manager.set_section_value("calibration_file", key, str(dest_path))
+    console.print(f"[green]✓[/green] Calibration file copied to: {dest_path}")
+
+
+def _configure_calibration(config_manager: ConfigManager) -> int:
+    """
+    Configure calibration files interactively.
+
+    Guides the user through setting up one or more calibration files, including
+    checking for existing files and copying files to the config directory.
+    Supports multiple calibration files for multi-microscope setups.
+
+    :param config_manager: ConfigManager instance to update.
+    :type config_manager: ConfigManager
+    :return: Number of calibration files configured.
+    :rtype: int
+    """
     console.print("\n[bold cyan]📁 Calibration File Setup[/bold cyan]")
     console.print(
-        "Please provide the path to your calibration file with .dat extension."
+        "Please provide the path to your calibration file(s) with .dat extension."
     )
 
-    # Check for existing .dat files
-    existing_dat_files: List[Path] = list(CONFIG_DIR.glob("*.dat"))
+    # Get existing calibration files from config
+    existing_cal_files = _get_calibration_file_list(config_manager)
 
-    if existing_dat_files:
-        console.print(
-            f"[green]Found existing calibration file:[/green] {existing_dat_files[0].name}"
-        )
-        if not Confirm.ask("Use existing calibration file?"):
-            for dat_file in existing_dat_files:
-                dat_file.unlink()
+    if existing_cal_files:
+        console.print("\n[green]Existing calibration files:[/green]")
+        table: Table = Table(show_header=True)
+        table.add_column("Key", style="cyan")
+        table.add_column("Path", style="green")
+
+        for key, path in existing_cal_files:
+            table.add_row(key, path)
+
+        console.print(table)
+
+        if Confirm.ask("\nDo you want to keep existing calibration files?"):
+            if Confirm.ask("Do you want to add more calibration files?"):
+                # Continue adding from where we left off
+                pass
+            else:
+                return len(existing_cal_files)
         else:
-            config_manager.set_section_value(
-                "calibration_file", "calibration_file", str(existing_dat_files[0])
-            )
-            return
+            # Clear existing calibration files from config
+            if "calibration_file" in config_manager.config:
+                config_manager.config.remove_section("calibration_file")
+            # Also clear calibration_mapping since it's now invalid
+            if "calibration_mapping" in config_manager.config:
+                config_manager.config.remove_section("calibration_mapping")
+            console.print("[green]✓[/green] Cleared existing calibration files")
+            existing_cal_files = []
+
+    # Track calibration files added in this session
+    cal_file_count = len(existing_cal_files)
 
     while True:
+        ordinal = cal_file_count + 1
         file_path: str = Prompt.ask(
-            "Enter path to calibration .dat file (or 'skip' to skip)"
+            f"Enter path to calibration file {ordinal} (or 'done' to finish, 'skip' to skip)"
         )
 
         if file_path.lower() == "skip":
             console.print("[yellow]⚠️  Skipping calibration file configuration[/yellow]")
-            return
+            return cal_file_count
+
+        if file_path.lower() == "done":
+            if cal_file_count == 0:
+                console.print("[yellow]⚠️  No calibration files configured[/yellow]")
+            break
 
         # Trim whitespace from the path
         file_path = file_path.strip()
 
         try:
-            _set_calibration_file(config_manager, Path(file_path))
-            break
+            _set_calibration_file_numbered(
+                config_manager, Path(file_path), cal_file_count
+            )
+            cal_file_count += 1
+            console.print(f"[green]✓[/green] Calibration file {cal_file_count} added")
+
+            # Ask if user wants to add another
+            if not Confirm.ask("Would you like to add another calibration file?"):
+                break
+
         except ConfigError as e:
             console.print(f"[red]❌ {e}[/red]")
             continue
+
+    return cal_file_count
 
 
 def _set_calibration_file(config_manager: ConfigManager, file_path: Path) -> None:
@@ -679,15 +857,21 @@ def _set_calibration_file(config_manager: ConfigManager, file_path: Path) -> Non
         raise ConfigError(f"Failed to copy calibration file: {e}")
 
 
-def _configure_identifiers(config_manager: ConfigManager) -> None:
+def _configure_identifiers(
+    config_manager: ConfigManager, cal_file_count: Optional[int] = None
+) -> None:
     """
     Configure image identifiers interactively.
 
     Guides the user through setting up image identifiers for different
     image types/conditions. Shows existing identifiers and allows adding new ones.
+    When multiple calibration files exist, prompts user to assign each identifier
+    to a calibration file.
 
     :param config_manager: ConfigManager instance to update.
     :type config_manager: ConfigManager
+    :param cal_file_count: Number of calibration files configured.
+    :type cal_file_count: Optional[int]
     :rtype: None
     """
     console.print("\n[bold cyan]🏷️  Image Identifiers Setup[/bold cyan]")
@@ -697,26 +881,45 @@ def _configure_identifiers(config_manager: ConfigManager) -> None:
         "where AXX is the camera model and AcType is the acquisition type."
     )
 
+    # Get calibration files list for assignment
+    cal_files = _get_calibration_file_list(config_manager)
+    if cal_file_count is None:
+        cal_file_count = len(cal_files)
+
     # Show existing identifiers
     identifiers_section: Dict[str, str] = config_manager.get_section_dict("identifiers")
+    mapping_section: Dict[str, str] = config_manager.get_section_dict(
+        "calibration_mapping"
+    )
 
     if identifiers_section:
         console.print("\n[green]Existing identifiers:[/green]")
         table: Table = Table(show_header=True)
         table.add_column("Key", style="cyan")
         table.add_column("Identifier", style="green")
+        if cal_file_count > 1:
+            table.add_column("Calibration File", style="magenta")
 
         for key, value in identifiers_section.items():
-            table.add_row(key, value)
+            if cal_file_count > 1 and mapping_section:
+                cal_key = mapping_section.get(key, "not assigned")
+                table.add_row(key, value, cal_key)
+            else:
+                table.add_row(key, value)
 
         console.print(table)
 
         if Confirm.ask("\nDo you want to remove all existing identifiers?"):
             if "identifiers" in config_manager.config:
                 config_manager.config.remove_section("identifiers")
-            console.print("[green]✓[/green] All identifiers removed")
+            if "calibration_mapping" in config_manager.config:
+                config_manager.config.remove_section("calibration_mapping")
+            console.print("[green]✓[/green] All identifiers and mappings removed")
+            identifiers_section = {}
         else:
             if not Confirm.ask("Do you want to add more identifiers?"):
+                # Ensure mappings exist for single calibration case
+                _ensure_calibration_mappings(config_manager, cal_file_count)
                 return
 
     # Add new identifiers
@@ -734,6 +937,7 @@ def _configure_identifiers(config_manager: ConfigManager) -> None:
         if existing_nums:
             id_counter = max(existing_nums) + 1
 
+    added_count = 0
     while True:
         identifier: str = Prompt.ask(
             f"Enter identifier {id_counter} (or press Enter to finish)", default=""
@@ -744,14 +948,122 @@ def _configure_identifiers(config_manager: ConfigManager) -> None:
 
         if identifier.lower() == "no":
             console.print("[blue]ℹ️  No identifiers will be added[/blue]")
-            return
+            break
 
-        config_manager.set_section_value("identifiers", f"id{id_counter}", identifier)
-        console.print(f"[green]✓[/green] Added: id{id_counter} = {identifier}")
+        id_key = f"id{id_counter}"
+        config_manager.set_section_value("identifiers", id_key, identifier)
+        console.print(f"[green]✓[/green] Added: {id_key} = {identifier}")
+
+        # Assign to calibration file if multiple exist
+        if cal_file_count > 1:
+            cal_key = _prompt_calibration_assignment(
+                config_manager, identifier, cal_files
+            )
+            if cal_key:
+                config_manager.set_section_value("calibration_mapping", id_key, cal_key)
+                console.print(f"[green]✓[/green] Mapped {id_key} → {cal_key}")
+
         id_counter += 1
+        added_count += 1
 
-    if id_counter > 1:
-        console.print(f"[green]✓[/green] Added {id_counter - 1} identifier(s)")
+    if added_count > 0:
+        console.print(f"[green]✓[/green] Added {added_count} identifier(s)")
+
+    # Ensure mappings exist
+    _ensure_calibration_mappings(config_manager, cal_file_count)
+
+
+def _prompt_calibration_assignment(
+    config_manager: ConfigManager,
+    identifier: str,
+    cal_files: List[Tuple[str, str]],
+) -> Optional[str]:
+    """
+    Prompt user to assign an identifier to a calibration file.
+
+    Displays numbered list of calibration files and prompts user to select one.
+
+    :param config_manager: ConfigManager instance.
+    :type config_manager: ConfigManager
+    :param identifier: The identifier value being assigned.
+    :type identifier: str
+    :param cal_files: List of (key, path) tuples for calibration files.
+    :type cal_files: List[Tuple[str, str]]
+    :return: Selected calibration file key, or None if cancelled.
+    :rtype: Optional[str]
+    """
+    console.print(f"\n[blue]Assign '{identifier}' to which calibration file?[/blue]")
+
+    # Display options
+    for i, (key, path) in enumerate(cal_files, 1):
+        filename = Path(path).name
+        console.print(f"  {i}. {key} ({filename})")
+    console.print("  0. Cancel (don't add this identifier)")
+
+    while True:
+        choice = Prompt.ask("Enter number", default="1")
+
+        try:
+            choice_num = int(choice)
+            if choice_num == 0:
+                # Remove the identifier we just added
+                return None
+            if 1 <= choice_num <= len(cal_files):
+                return cal_files[choice_num - 1][0]  # Return the key
+            else:
+                console.print(
+                    f"[red]Please enter a number between 0 and {len(cal_files)}[/red]"
+                )
+        except ValueError:
+            console.print("[red]Please enter a valid number[/red]")
+
+
+def _ensure_calibration_mappings(
+    config_manager: ConfigManager, cal_file_count: int
+) -> None:
+    """
+    Ensure all identifiers have calibration mappings.
+
+    For single-calibration setups, auto-creates mappings for all identifiers.
+    For multi-calibration setups, warns about unmapped identifiers.
+
+    :param config_manager: ConfigManager instance to update.
+    :type config_manager: ConfigManager
+    :param cal_file_count: Number of calibration files configured.
+    :type cal_file_count: int
+    :rtype: None
+    """
+    identifiers_section = config_manager.get_section_dict("identifiers")
+    mapping_section = config_manager.get_section_dict("calibration_mapping")
+    cal_files = _get_calibration_file_list(config_manager)
+
+    if not identifiers_section or not cal_files:
+        return
+
+    # Determine the first calibration file key
+    first_cal_key = cal_files[0][0]
+
+    # Check for unmapped identifiers
+    unmapped = [
+        id_key for id_key in identifiers_section.keys() if id_key not in mapping_section
+    ]
+
+    if unmapped:
+        if cal_file_count <= 1:
+            # Single calibration: auto-map all
+            for id_key in unmapped:
+                config_manager.set_section_value(
+                    "calibration_mapping", id_key, first_cal_key
+                )
+            console.print(
+                f"[blue]ℹ️  Auto-mapped {len(unmapped)} identifier(s) to {first_cal_key}[/blue]"
+            )
+        else:
+            # Multiple calibrations: warn about unmapped
+            console.print(
+                f"[yellow]⚠️  {len(unmapped)} identifier(s) have no calibration mapping: "
+                f"{', '.join(unmapped)}[/yellow]"
+            )
 
 
 def _configure_license_key(config_manager: ConfigManager) -> None:
