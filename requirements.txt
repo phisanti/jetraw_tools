@@ -3,3 +3,4 @@ numpy
 typer
 tifffile
 ome_types
+rich

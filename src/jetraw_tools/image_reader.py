@@ -77,10 +77,10 @@ class ImageReader:
             if self.read_ome:
                 try:
                     metadata = ome_types.from_tiff(tif)
-                except:
+                except Exception:
                     try:
                         metadata = ome_types.from_xml(tif.ome_metadata)
-                    except:
+                    except Exception:
                         metadata = None
             else:
                 metadata = tif.imagej_metadata

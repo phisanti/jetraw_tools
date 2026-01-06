@@ -2,7 +2,7 @@
 from .utils import setup_locale
 
 setup_locale()
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 
 # Define lazy loading functions

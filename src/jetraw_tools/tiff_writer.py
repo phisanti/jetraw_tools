@@ -1,11 +1,13 @@
+import json
+from typing import Union, Optional, Any, Tuple
+
 import numpy as np
 import tifffile
 import ome_types
+
 from .jetraw_tiff import JetrawTiff
-import json
+from .logger import logger
 from .utils import convert_to_ascii, flatten_dict, serialise
-import json
-from typing import Union, Optional, Any, Tuple
 
 
 class TiffWriter_5D:
@@ -81,7 +83,7 @@ class TiffWriter_5D:
                 self._jrtif.close()
             # Handle error when the upper with block is closed
             except RuntimeError as e:
-                pass
+                logger.debug(f"RuntimeError during file close (may be expected): {e}")
         self._jrtif = None
 
     def write(self, image_buffer: np.ndarray) -> None:
