@@ -27,3 +27,4 @@ tests/*
 
 # Project specific
 CLAUDE.md
+.agents_context/

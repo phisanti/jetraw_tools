@@ -5,6 +5,7 @@ import ome_types
 import os
 from .tiff_reader import imread
 from .utils import flatten_dict, dict2ome
+from .logger import logger
 from typing import Tuple, Union, Dict, Any
 
 
@@ -87,26 +88,50 @@ class ImageReader:
 
         return img_map, metadata
 
-    def read_p_tiff(self) -> Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME]]:
+    def read_p_tiff(
+        self,
+    ) -> Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME, None]]:
         """Read pyramidal TIFF using specialized reader.
 
         :return: Tuple of (image array, metadata)
-        :rtype: Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME]]
+        :rtype: Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME, None]]
         """
         img_map = imread(self.input_filename)
         with tifffile.TiffFile(self.input_filename) as tif:
             if self.read_ome:
-                metadata = ome_types.from_xml(tif.ome_metadata)
+                if tif.ome_metadata is not None:
+                    try:
+                        metadata = ome_types.from_xml(tif.ome_metadata)
+                    except Exception:
+                        metadata = tif.imagej_metadata
+                        logger.warning(
+                            f"Failed to parse OME-XML in '{os.path.basename(self.input_filename)}'. "
+                            f"Falling back to ImageJ metadata."
+                        )
+                else:
+                    metadata = tif.imagej_metadata
+                    if metadata is not None:
+                        logger.warning(
+                            f"No OME-XML metadata in '{os.path.basename(self.input_filename)}'. "
+                            f"Using ImageJ metadata instead (likely JetRaw 26+ compressed file)."
+                        )
+                    else:
+                        logger.warning(
+                            f"No OME-XML or ImageJ metadata found in "
+                            f"'{os.path.basename(self.input_filename)}'."
+                        )
             else:
                 metadata = tif.imagej_metadata
 
         return img_map, metadata
 
-    def read_image(self) -> Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME]]:
+    def read_image(
+        self,
+    ) -> Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME, None]]:
         """Read image based on file extension.
 
         :return: Tuple of (image array, metadata)
-        :rtype: Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME]]
+        :rtype: Tuple[np.ndarray, Union[Dict[str, Any], ome_types.OME, None]]
         """
         if self.image_extension == ".nd2":
             return self.read_nd2_image()
