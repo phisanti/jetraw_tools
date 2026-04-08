@@ -1,0 +1,6 @@
+﻿jetraw\_tools.imread
+====================
+
+.. currentmodule:: jetraw_tools
+
+.. autofunction:: imread
