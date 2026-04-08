@@ -16,7 +16,8 @@ from rich.console import Console
 
 # Local package imports - lazy import jetraw_tiff only when needed
 from jetraw_tools.compression_tool import CompressionTool
-from jetraw_tools.config import ConfigManager, init as config_init
+from jetraw_tools.config import init as config_init
+from jetraw_tools.image_reader import VALID_METADATA_FORMATS
 from jetraw_tools.logger import logger, setup_logger
 from jetraw_tools.utils import cores_validation
 
@@ -487,7 +488,6 @@ def _process_files(
     setup_logger(level=log_level)
 
     # Load existing configuration
-    config_manager = ConfigManager()
     config_file = os.path.expanduser("~/.config/jetraw_tools/jetraw_tools.cfg")
 
     if not os.path.exists(config_file):
@@ -549,9 +549,10 @@ def _process_files(
     )
 
     # Validate metadata format
-    if metadata_format not in ("ome", "imagej"):
+    if metadata_format not in VALID_METADATA_FORMATS:
         logger.error(
-            f"Invalid --metadata-format '{metadata_format}'. Must be 'ome' or 'imagej'."
+            f"Invalid --metadata-format '{metadata_format}'. "
+            f"Must be one of {VALID_METADATA_FORMATS}."
         )
         raise typer.Exit(1)
 

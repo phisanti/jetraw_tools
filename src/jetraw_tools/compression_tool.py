@@ -4,9 +4,9 @@ import numpy as np
 import tifffile
 import locale
 import multiprocessing
+from typing import Optional
 
 # Local package imports
-from functools import partial
 from .dpcore import load_parameters
 from .utils import prepare_images, add_extension, create_compress_folder
 from .tiff_writer import imwrite, metadata_writer
@@ -269,7 +269,7 @@ class CompressionTool:
         mode: str = "compress",
         image_extension: str = ".tiff",
         process_metadata: bool = True,
-        ome_bool: bool = True,
+        ome_bool: Optional[bool] = None,
         metadata_json: bool = True,
         remove_source: bool = False,
         target_folder: str = None,  # New parameter for target folder
@@ -281,11 +281,17 @@ class CompressionTool:
         :param mode: The mode, either "compress" or "decompress".
         :param image_extension: The image file extension.
         :param process_metadata: Whether to process metadata.
-        :param ome_bool: Whether to use OME metadata.
+        :param ome_bool: Whether to write OME metadata. If None (default),
+            derived from the instance's metadata_format ('ome' -> True,
+            'imagej' -> False).
         :param metadata_json: Whether to write metadata as JSON.
         :param remove_source: Whether to remove the source files.
         :param target_folder: Optional target folder for processed images.
         """
+
+        # Derive ome_bool from metadata_format when not explicitly passed
+        if ome_bool is None:
+            ome_bool = self.metadata_format == "ome"
 
         # Create or use the output folder (with check if it exists)
         if target_folder:

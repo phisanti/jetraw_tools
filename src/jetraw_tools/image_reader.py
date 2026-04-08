@@ -12,6 +12,9 @@ from typing import Tuple, Union, Dict, Any, Optional
 VALID_METADATA_FORMATS = ("ome", "imagej")
 
 # Module-level dedup so each unique fallback warning fires once per process.
+# Note: under multiprocessing.Pool, each worker subprocess maintains its own
+# copy of this set, so a batch run will emit each unique warning at most once
+# per worker (not once per file, but not globally deduped either).
 _warned_messages: set = set()
 
 
@@ -126,6 +129,10 @@ class ImageReader:
     ) -> Tuple[np.ndarray, Union[ome_types.OME, None]]:
         """Read ND2 image file and metadata.
 
+        Note: ND2 files only expose OME metadata via the `nd2` library, so the
+        `metadata_format` preference is ignored here. A debug message is
+        emitted if the user requested 'imagej' to make this explicit.
+
         :return: Tuple of (image array, OME metadata or None if read_metadata=False)
         :rtype: Tuple[np.ndarray, Union[ome_types.OME, None]]
         """
@@ -134,6 +141,13 @@ class ImageReader:
 
             if not self.read_metadata:
                 return img_map, None
+
+            if self.metadata_format == "imagej":
+                logger.debug(
+                    f"ND2 source '{os.path.basename(self.input_filename)}' only "
+                    f"exposes OME metadata; '--metadata-format imagej' is ignored "
+                    f"for the read step."
+                )
 
             # Extract and combine metadata
             ome_metadata = img_nd2.ome_metadata()
