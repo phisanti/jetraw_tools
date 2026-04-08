@@ -40,6 +40,7 @@ class CompressionTool:
         ncores=0,
         omit_processed: bool = True,
         verbose: bool = False,
+        metadata_format: str = "ome",
     ):
         """:no-index:"""
         # Check if calibration file exists
@@ -55,6 +56,7 @@ class CompressionTool:
         self.ncores = ncores
         self.omit_processed = omit_processed
         self.verbose = verbose
+        self.metadata_format = metadata_format
         if verbose:
             logger.setLevel(logging.DEBUG)
 
@@ -214,11 +216,6 @@ class CompressionTool:
         # Input/output files
         input_filename = os.path.join(folder_path, image_file)
         output_filename = os.path.join(output_folder, image_file)
-        if not ome_bool and process_metadata:
-            logger.warning(
-                "Metadata not allowed for *.p.tif files yet, omitting metadata..."
-            )
-            process_metadata = False
 
         output_filename = add_extension(
             output_filename, image_extension, mode=mode, ome=ome_bool
@@ -226,11 +223,15 @@ class CompressionTool:
 
         failed_files = 0
         try:
-            # Read image and metadata
-            image_reader = ImageReader(input_filename, image_extension)
+            # Read image (and metadata only if requested)
+            image_reader = ImageReader(
+                input_filename,
+                image_extension,
+                metadata_format=self.metadata_format,
+                read_metadata=process_metadata,
+            )
             img_map, metadata = image_reader.read_image()
-
-            if process_metadata is False:
+            if metadata is None:
                 metadata = {}
 
             if mode == "compress":

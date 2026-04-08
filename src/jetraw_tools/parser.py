@@ -40,6 +40,13 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
+_METADATA_FORMAT_HELP = (
+    "Preferred metadata format: 'ome' (default) or 'imagej'. If the requested "
+    "format is unavailable in a file, the tool falls back to the other format "
+    "with a warning."
+)
+
+
 @app.command()
 def compress(
     path: str = typer.Argument(..., help="Path to folder/file to compress"),
@@ -67,6 +74,9 @@ def compress(
     metadata: bool = typer.Option(
         True, "--metadata/--no-metadata", help="Process metadata"
     ),
+    metadata_format: str = typer.Option(
+        "ome", "-mf", "--metadata-format", help=_METADATA_FORMAT_HELP
+    ),
     json: bool = typer.Option(False, "--json", help="Save metadata as JSON"),
     remove: bool = typer.Option(
         False, "--remove", help="Remove source files after processing"
@@ -89,6 +99,7 @@ def compress(
         remove,
         op,
         verbose,
+        metadata_format,
     )
 
 
@@ -119,6 +130,9 @@ def decompress(
     metadata: bool = typer.Option(
         True, "--metadata/--no-metadata", help="Process metadata"
     ),
+    metadata_format: str = typer.Option(
+        "ome", "-mf", "--metadata-format", help=_METADATA_FORMAT_HELP
+    ),
     remove: bool = typer.Option(
         False, "--remove", help="Remove source files after processing"
     ),
@@ -140,6 +154,7 @@ def decompress(
         remove,
         op,
         verbose,
+        metadata_format,
     )
 
 
@@ -431,6 +446,7 @@ def _process_files(
     remove: bool,
     op: bool,
     verbose: bool,
+    metadata_format: str = "ome",
 ) -> None:
     """Process files for compression or decompression operations.
 
@@ -532,13 +548,27 @@ def _process_files(
         f"Using calibration file: {os.path.basename(cal_file)} and identifier: {identifier}"
     )
 
-    compressor = CompressionTool(cal_file, identifier, ncores, op, verbose)
+    # Validate metadata format
+    if metadata_format not in ("ome", "imagej"):
+        logger.error(
+            f"Invalid --metadata-format '{metadata_format}'. Must be 'ome' or 'imagej'."
+        )
+        raise typer.Exit(1)
+
+    compressor = CompressionTool(
+        cal_file,
+        identifier,
+        ncores,
+        op,
+        verbose,
+        metadata_format=metadata_format,
+    )
     compressor.process_folder(
         full_path,
         mode,
         extension,
         metadata,
-        ome_bool=True,
+        ome_bool=(metadata_format == "ome"),
         metadata_json=json,
         remove_source=remove,
         target_folder=output,
